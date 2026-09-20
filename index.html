@@ -6,7 +6,7 @@
 <title>Motor's Events – Rassos, courses et salons auto, moto, quad, truck, nautisme, aviation</title>
 <meta name="description" content="Tous les événements auto, moto, quad, truck, nautisme et aviation en France. Publiez le vôtre gratuitement.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co data: blob:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests">
 <meta name="permissions-policy" content="geolocation=(self), camera=(), microphone=(), payment=()">
 <!--
   Polices : chargées depuis Google Fonts pour la maquette.
@@ -53,6 +53,7 @@
     <div class="actions">
       <button class="login" id="favoritesBtn" type="button">♡ Favoris <span id="favCount">0</span></button>
       <button class="login" id="alertsBtn" type="button">🔔 Alertes</button>
+      <button class="account-btn" id="accountBtn" type="button" aria-label="Mon compte">Compte</button>
       <button class="btn btn-orange" type="button" data-open-add>Ajouter un événement</button>
     </div>
   </div>
@@ -231,6 +232,14 @@
           <label for="f-place">Lieu</label>
           <input id="f-place" name="place" type="text" placeholder="Adresse ou commune" maxlength="200" required>
         </div>
+        <div>
+          <label for="f-city">Ville</label>
+          <input id="f-city" name="city" type="text" maxlength="120" required>
+        </div>
+        <div>
+          <label for="f-region">Région</label>
+          <select id="f-region" name="region" required></select>
+        </div>
         <div class="full">
           <label for="f-desc">Description</label>
           <textarea id="f-desc" name="desc" maxlength="1500" required></textarea>
@@ -280,6 +289,8 @@
   </div>
 </dialog>
 
+<script src="./supabase-config.js"></script>
 <script src="./script.js" defer></script>
+<script type="module" src="./account.js"></script>
 </body>
 </html>

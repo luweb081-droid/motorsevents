@@ -49,6 +49,10 @@
     { id: 15, title: 'Camion cross',                      cat: 'truck',    sub: 'Camion cross',         city: 'Strasbourg',       region: 'Grand Est',                    date: '2026-10-04', price: '8 €' }
   ];
 
+  // Les événements de démonstration restent disponibles, puis les événements
+  // approuvés de Supabase sont ajoutés/remplacés à leur arrivée.
+  let ALL_EVENTS = [...EVENTS];
+
   const DEFAULT = { cat: 'all', what: '', where: '', when: 'weekend' };
   const state = { ...DEFAULT };
 
@@ -138,7 +142,7 @@
     const w = WHEN[state.when];
     const what = norm(state.what.trim());
     const where = norm(state.where.trim());
-    const items = EVENTS
+    const items = ALL_EVENTS
       .filter(e => (state.cat === 'all' || e.cat === state.cat)
         && e.date >= w.from && e.date <= w.to
         && (!what || norm(`${e.title} ${e.sub} ${CATS[e.cat]}`).includes(what))
@@ -196,21 +200,7 @@
     }
   });
 
-  form.addEventListener('submit', ev => {
-    ev.preventDefault();
-    const title = $('#f-title').value.trim();
-    const place = $('#f-place').value.trim();
-    const desc = $('#f-desc').value.trim();
-    const url = $('#f-url').value.trim();
-    if (!title || !place || !desc) return;
-    if (url) { try { const u = new URL(url); if (!['http:','https:'].includes(u.protocol)) throw new Error(); } catch (_) { {
-      alert('Le lien officiel doit commencer par http:// ou https://.');
-      return;
-    }
-    form.hidden = true;
-    done.hidden = false;
-    $('#doneClose').focus();
-  });
+  // La soumission réelle est gérée par account.js après authentification Supabase.
 
 
   /* ===== V2 : favoris, fiches, calendrier, à la une, alertes ===== */
@@ -249,7 +239,7 @@
     } catch (_) { return null; }
   };
   function openEvent(id){
-    const e=EVENTS.find(x=>x.id===id); if(!e) return;
+    const e=ALL_EVENTS.find(x=>x.id===id); if(!e) return;
     const fav=isFav(id);
     eventDetail.replaceChildren();
     const hero=el('div',{class:'event-detail-hero'},
@@ -293,14 +283,14 @@
   eventDlg.addEventListener('click',ev=>{if(ev.target===eventDlg)eventDlg.close()});
 
   function renderFeatured(){
-    const top=EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+    const top=ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
     $('#featuredGrid').replaceChildren(...top.map(e=>el('article',{class:'featured-item',tabindex:'0'},el('span',{class:'featured-badge',text:'À LA UNE'}),el('h3',{text:e.title}),el('p',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`}))));
     $('#featuredGrid').querySelectorAll('.featured-item').forEach((n,i)=>{n.addEventListener('click',()=>openEvent(top[i].id));n.addEventListener('keydown',ev=>{if(ev.key==='Enter')openEvent(top[i].id)})});
   }
   function renderCalendar(){
-    const groups={}; EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>(groups[e.date]??=[]).push(e));
+    const groups={}; ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>(groups[e.date]??=[]).push(e));
     $('#calendarGrid').replaceChildren(...Object.entries(groups).map(([date,items])=>el('article',{class:'calendar-day'},el('div',{class:'calendar-day-head'},el('b',{text:fmt(date,{weekday:'long'})}),el('span',{text:fmt(date,{day:'numeric',month:'long',year:'numeric'})})),el('div',{class:'calendar-events'},...items.map(e=>el('button',{class:'calendar-event',type:'button'},el('strong',{text:e.title}),el('small',{text:`${e.city} · ${e.price}`})))))));
-    const nodes=$('#calendarGrid').querySelectorAll('.calendar-event'); let i=0; EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>nodes[i++].addEventListener('click',()=>openEvent(e.id)));
+    const nodes=$('#calendarGrid').querySelectorAll('.calendar-event'); let i=0; ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>nodes[i++].addEventListener('click',()=>openEvent(e.id)));
   }
 
   $('#calendarBtn').addEventListener('click',()=>{ $('#calendarSection').hidden=false; renderCalendar(); $('#calendarSection').scrollIntoView({behavior:'smooth'}); });
@@ -312,7 +302,7 @@
     $('#calendarSection').hidden=false;
     $('#calendar-title').textContent='Mes favoris';
     document.querySelector('.calendar-sub').textContent='Vos événements enregistrés.';
-    const favEvents=EVENTS.filter(e=>f.includes(e.id));
+    const favEvents=ALL_EVENTS.filter(e=>f.includes(e.id));
     $('#calendarGrid').replaceChildren(...favEvents.map(e=>{
       const article=el('article',{class:'calendar-day'});
       const head=el('div',{class:'calendar-day-head'},el('b',{text:e.title}),el('span',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`}));
@@ -343,6 +333,16 @@
     $('#alertStatus').textContent='Alerte enregistrée sur cet appareil.';
   });
   updateFavCount(); renderFeatured();
+
+  window.addEventListener('motors:supabase-events', ev => {
+    const incoming = Array.isArray(ev.detail) ? ev.detail : [];
+    const demo = EVENTS.filter(e => e.source !== 'supabase');
+    ALL_EVENTS = [...demo, ...incoming];
+    renderFeatured();
+    renderCalendar();
+    updateFavCount();
+    render();
+  });
 
   render();
 })();
