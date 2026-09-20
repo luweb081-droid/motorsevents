@@ -176,10 +176,10 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     side.append(manage); overview.append(panel,side); body.append(overview);
 
     const wishlist=document.createElement('section');wishlist.dataset.profilePanel='wishlist';wishlist.className='profile-list-panel';wishlist.hidden=true;
-    wishlist.append(el('div',{class:'panel-title-row'},el('div',{},el('h3',{text:'Ma wishlist'}),el('p',{class:'me-muted',text:'Les événements que vous avez enregistrés.'})));const wishBox=document.createElement('div',{class:'social-list'});wishBox.id='profileWishlist';wishlist.append(wishBox);body.append(wishlist);
+    const wishHead = el('div',{class:'panel-title-row'}, el('div',{}, el('h3',{text:'Ma wishlist'}), el('p',{class:'me-muted',text:'Les événements que vous avez enregistrés.'}))); const wishBox=document.createElement('div'); wishBox.className='social-list'; wishBox.id='profileWishlist'; wishlist.append(wishHead,wishBox); body.append(wishlist);
 
     const following=document.createElement('section');following.dataset.profilePanel='following';following.className='profile-list-panel';following.hidden=true;
-    following.append(el('div',{class:'panel-title-row'},el('div',{},el('h3',{text:'Mes abonnements'}),el('p',{class:'me-muted',text:'Les organisateurs et passionnés que vous suivez.'})));const followBox=document.createElement('div',{class:'social-list'});followBox.id='profileFollowing';following.append(followBox);body.append(following);
+    const followHead = el('div',{class:'panel-title-row'}, el('div',{}, el('h3',{text:'Mes abonnements'}), el('p',{class:'me-muted',text:'Les organisateurs et passionnés que vous suivez.'}))); const followBox=document.createElement('div'); followBox.className='social-list'; followBox.id='profileFollowing'; following.append(followHead,followBox); body.append(following);
 
     const events=document.createElement('section');events.dataset.profilePanel='events';events.className='profile-list-panel';events.hidden=true;
     const eh=document.createElement('div');eh.className='panel-title-row';eh.append(el('div',{},el('h3',{text:'Mes événements'}),el('p',{class:'me-muted',text:'Suivez vos annonces et leur validation.'})));const add=document.createElement('button');add.id='me-add-event';add.className='btn btn-orange';add.type='button';add.textContent='Ajouter un événement';eh.append(add);events.append(eh);const my=document.createElement('div');my.id='myEvents';my.className='my-events';events.append(my);body.append(events);
