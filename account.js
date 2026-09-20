@@ -215,9 +215,31 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   }
 
   function renderAccountButton() {
-    const b = $('#accountBtn'); if (!b) return;
-    if (session) { b.textContent = profile?.display_name ? `👤 ${profile.display_name.slice(0, 18)}` : '👤 Mon profil'; b.classList.add('connected'); }
-    else { b.textContent = 'Compte'; b.classList.remove('connected'); }
+    const b = $('#accountBtn');
+    const favorites = $('#favoritesBtn');
+    const alerts = $('#alertsBtn');
+    const headerAdd = $('#headerAddBtn');
+    if (!b) return;
+
+    // Les fonctions réservées aux membres restent totalement masquées
+    // tant qu'aucune session Supabase n'est active.
+    const connected = Boolean(session);
+    if (favorites) favorites.hidden = !connected;
+    if (alerts) alerts.hidden = !connected;
+    if (headerAdd) headerAdd.hidden = !connected;
+
+    if (connected) {
+      b.textContent = profile?.display_name
+        ? `👤 ${profile.display_name.slice(0, 18)}`
+        : '👤 Mon profil';
+      b.setAttribute('aria-label', 'Mon profil');
+      b.classList.add('connected');
+    } else {
+      // Le seul bouton conservé hors connexion permet d'ouvrir la connexion.
+      b.textContent = 'Se connecter';
+      b.setAttribute('aria-label', 'Se connecter');
+      b.classList.remove('connected');
+    }
   }
 
   async function loadProfile() {
@@ -254,6 +276,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     await loadSocialState();
     renderAccountButton();
     await loadApprovedEvents();
+    await loadTopMembers();
     if (session && profile?.role && ['admin', 'moderator'].includes(profile.role)) {
       document.body.classList.add('is-admin');
     } else document.body.classList.remove('is-admin');
@@ -501,6 +524,82 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     notify(status === 'approved' ? 'Événement publié.' : 'Événement refusé.', true); await renderAdmin(); await loadApprovedEvents();
   }
 
+  function renderMemberCard(p, extra = '') {
+    const name = p.display_name || p.username || 'Membre';
+    const initials = name.slice(0, 2).toUpperCase();
+    const avatar = p.avatar_url
+      ? el('img', { src: p.avatar_url, alt: '', loading: 'lazy' })
+      : el('div', { class: 'member-avatar-fallback', text: initials });
+    const meta = [p.city, p.region].filter(Boolean).join(' · ') || 'Membre Motor\'s Events';
+    const card = el('article', { class: 'member-result-card' },
+      el('div', { class: 'member-avatar' }, avatar),
+      el('div', { class: 'member-result-main' },
+        el('strong', { text: name }),
+        p.username ? el('span', { text: `@${p.username}` }) : null,
+        el('small', { text: meta }),
+        extra ? el('em', { text: extra }) : null
+      ),
+      el('span', { class: 'member-arrow', text: '→' })
+    );
+    card.addEventListener('click', () => openPublicProfile(p.id));
+    return card;
+  }
+
+  async function searchMembers(term) {
+    const box = $('#memberResults');
+    if (!box || !supabase) return;
+    term = safeText(term, 60);
+    box.replaceChildren();
+    if (!term) {
+      box.append(el('div', { class: 'community-empty' },
+        el('strong', { text: 'Entrez un nom, un pseudo ou une ville' }),
+        el('p', { text: 'Les profils publics Motor\'s Events apparaîtront ici.' })
+      ));
+      return;
+    }
+    box.append(el('div', { class: 'community-loading', text: 'Recherche…' }));
+    const pattern = `%${term}%`;
+    const [byName, byUsername, byCity] = await Promise.all([
+      supabase.from('profiles').select('id,display_name,username,city,region,avatar_url,bio').ilike('display_name', pattern).limit(20),
+      supabase.from('profiles').select('id,display_name,username,city,region,avatar_url,bio').ilike('username', pattern).limit(20),
+      supabase.from('profiles').select('id,display_name,username,city,region,avatar_url,bio').ilike('city', pattern).limit(20)
+    ]);
+    const errors = [byName.error, byUsername.error, byCity.error].filter(Boolean);
+    if (errors.length) {
+      box.replaceChildren(el('div', { class: 'community-empty' }, el('strong', { text: 'Recherche indisponible' }), el('p', { text: errors[0].message })));
+      return;
+    }
+    const map = new Map();
+    [...(byName.data || []), ...(byUsername.data || []), ...(byCity.data || [])].forEach(p => map.set(p.id, p));
+    const results = [...map.values()].slice(0, 12);
+    if (!results.length) {
+      box.append(el('div', { class: 'community-empty' }, el('strong', { text: 'Aucun membre trouvé' }), el('p', { text: 'Essaie un autre nom, pseudo ou ville.' })));
+      return;
+    }
+    results.forEach(p => box.append(renderMemberCard(p)));
+  }
+
+  async function loadTopMembers() {
+    const box = $('#topMembers');
+    if (!box || !supabase) return;
+    box.replaceChildren(el('div', { class: 'community-loading', text: 'Chargement…' }));
+    const { data, error } = await supabase.rpc('get_top_publishers', { limit_count: 6 });
+    if (error) {
+      box.replaceChildren(el('div', { class: 'community-empty' }, el('strong', { text: 'Impossible de charger le classement' }), el('p', { text: error.message })));
+      return;
+    }
+    if (!data?.length) {
+      box.replaceChildren(el('div', { class: 'community-empty' }, el('strong', { text: 'Pas encore de classement' }), el('p', { text: 'Les membres apparaîtront ici après leurs premiers événements publiés.' })));
+      return;
+    }
+    data.forEach((p, index) => {
+      const rank = el('span', { class: 'member-rank', text: String(index + 1).padStart(2, '0') });
+      const card = renderMemberCard(p, `${Number(p.event_count) || 0} événement${Number(p.event_count) > 1 ? 's' : ''} publié${Number(p.event_count) > 1 ? 's' : ''}`);
+      card.prepend(rank);
+      box.append(card);
+    });
+  }
+
   function wire() {
     accountDialog = buildAuthDialog();
     profileDialog = buildProfileDialog();
@@ -526,6 +625,14 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     const adminButton = document.createElement('button'); adminButton.className = 'btn btn-orange admin-open'; adminButton.type = 'button'; adminButton.textContent = '🛡️ Modération'; adminButton.hidden = true; adminButton.addEventListener('click', () => { renderAdmin(); adminDialog.showModal(); });
     $('.profile-hero')?.append(adminButton);
     window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile };
+
+    $('#memberSearchForm')?.addEventListener('submit', ev => {
+      ev.preventDefault();
+      searchMembers($('#memberSearchInput')?.value || '');
+    });
+    $('#memberSearchInput')?.addEventListener('input', ev => {
+      if (!ev.target.value.trim()) searchMembers('');
+    });
   }
 
   async function main() {
@@ -539,6 +646,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
         const adminBtn = $('.admin-open');
         if (adminBtn) adminBtn.hidden = !(session && ['admin', 'moderator'].includes(profile?.role));
         await loadApprovedEvents();
+        await loadTopMembers();
       });
     });
     window.addEventListener('motors:open-db-event', ev => {

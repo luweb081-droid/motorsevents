@@ -47,14 +47,15 @@
         <li><a href="#results">Événements</a></li>
         <li><a href="#featured">À la une</a></li>
         <li><a href="#regions">Régions</a></li>
+        <li><a href="#community">Communauté</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
     </nav>
     <div class="actions">
-      <button class="login" id="favoritesBtn" type="button">♡ Favoris <span id="favCount">0</span></button>
-      <button class="login" id="alertsBtn" type="button">🔔 Alertes</button>
-      <button class="account-btn" id="accountBtn" type="button" aria-label="Mon compte">Compte</button>
-      <button class="btn btn-orange" type="button" data-open-add>Ajouter un événement</button>
+      <button class="login" id="favoritesBtn" type="button" hidden>♡ Favoris <span id="favCount">0</span></button>
+      <button class="login" id="alertsBtn" type="button" hidden>🔔 Alertes</button>
+      <button class="account-btn" id="accountBtn" type="button" aria-label="Se connecter">Se connecter</button>
+      <button class="btn btn-orange" id="headerAddBtn" type="button" data-open-add hidden>Ajouter un événement</button>
     </div>
   </div>
 </header>
@@ -140,6 +141,47 @@
     <div class="wrap">
       <div class="events-head"><div><h2 class="title" id="calendar-title">Calendrier</h2><p class="calendar-sub">Tous les événements à venir, regroupés par date.</p></div><button class="link-btn" type="button" id="closeCalendar">Fermer le calendrier</button></div>
       <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </section>
+
+  <section class="community" id="community" aria-labelledby="community-title">
+    <div class="wrap">
+      <div class="section-kicker">LA COMMUNAUTÉ</div>
+      <div class="community-head">
+        <div>
+          <h2 class="title" id="community-title">Trouvez les passionnés qui font vivre les rassos.</h2>
+          <p>Recherchez un membre, découvrez les organisateurs les plus actifs et suivez leurs prochains événements.</p>
+        </div>
+      </div>
+      <div class="community-grid">
+        <section class="community-panel member-search-panel" aria-labelledby="member-search-title">
+          <div class="panel-title-row">
+            <div>
+              <h3 id="member-search-title">Rechercher un membre</h3>
+              <p>Nom, pseudo ou ville.</p>
+            </div>
+          </div>
+          <form class="member-search" id="memberSearchForm" role="search">
+            <input id="memberSearchInput" type="search" maxlength="60" placeholder="Ex. Lucas, BMWClub, Albi…" autocomplete="off">
+            <button class="btn btn-orange" type="submit">Rechercher</button>
+          </form>
+          <div class="member-results" id="memberResults" aria-live="polite">
+            <div class="community-empty"><strong>Découvrez la communauté</strong><p>Recherchez un membre pour voir son profil et le suivre.</p></div>
+          </div>
+        </section>
+        <section class="community-panel top-members-panel" aria-labelledby="top-members-title">
+          <div class="panel-title-row">
+            <div>
+              <h3 id="top-members-title">Les membres les plus actifs</h3>
+              <p>Les membres qui publient le plus d'événements.</p>
+            </div>
+            <span class="community-live">COMMUNAUTÉ</span>
+          </div>
+          <div class="top-members" id="topMembers">
+            <div class="community-loading">Chargement…</div>
+          </div>
+        </section>
+      </div>
     </div>
   </section>
 

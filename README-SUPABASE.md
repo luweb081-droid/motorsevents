@@ -38,3 +38,7 @@ Ce fichier ajoute la table `follows`, ses index, ses policies RLS et la fonction
 ## 5. Sécurité
 
 Le frontend utilise uniquement la clé Publishable. Les permissions sensibles sont appliquées côté PostgreSQL avec les grants et RLS.
+
+## Communauté
+
+Après la migration sociale, exécuter une fois `community.sql` dans le SQL Editor. Elle crée la fonction publique `get_top_publishers()` qui ne compte que les événements `approved` et respecte les RLS existantes.
