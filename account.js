@@ -505,6 +505,15 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     accountDialog = buildAuthDialog();
     profileDialog = buildProfileDialog();
     adminDialog = buildAdminDialog();
+    publicProfileDialog = buildPublicProfileDialog();
+
+    // Les <dialog> créés dynamiquement doivent être attachés au document
+    // avant l'appel à showModal(). Sans cela, le bouton Compte ne peut pas
+    // ouvrir la fenêtre et le navigateur lève InvalidStateError.
+    [accountDialog, profileDialog, publicProfileDialog].forEach(dialog => {
+      if (dialog && !dialog.isConnected) document.body.appendChild(dialog);
+    });
+
     $('#accountBtn')?.addEventListener('click', openProfile);
     document.querySelectorAll('[data-open-add]').forEach(b => b.addEventListener('click', ev => {
       if (!session) { ev.preventDefault(); setTimeout(() => { if ($('#dlg')?.open) $('#dlg').close(); accountDialog.showModal(); }, 0); }
@@ -516,7 +525,6 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     $('#profileDlg')?.addEventListener('close', () => { editingEventId = null; });
     const adminButton = document.createElement('button'); adminButton.className = 'btn btn-orange admin-open'; adminButton.type = 'button'; adminButton.textContent = '🛡️ Modération'; adminButton.hidden = true; adminButton.addEventListener('click', () => { renderAdmin(); adminDialog.showModal(); });
     $('.profile-hero')?.append(adminButton);
-    publicProfileDialog = buildPublicProfileDialog();
     window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile };
   }
 
