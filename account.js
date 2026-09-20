@@ -32,6 +32,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   let accountDialog = null;
   let profileDialog = null;
   let adminDialog = null;
+  let publicProfileDialog = null;
   let authMode = 'login';
   let editingEventId = null;
 
@@ -52,7 +53,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     head.className = 'dlg-head';
     const h = document.createElement('h2'); h.textContent = title;
     const close = document.createElement('button');
-    close.className = 'link-btn'; close.type = 'button'; close.textContent = 'Fermer';
+    close.className = 'dialog-x'; close.type = 'button'; close.setAttribute('aria-label', 'Fermer'); close.textContent = '×';
     close.addEventListener('click', () => d.close());
     head.append(h, close); d.append(head);
     return d;
@@ -133,42 +134,75 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
   function buildProfileDialog() {
     const d = modalBase('profileDlg', 'Mon espace');
+    d.classList.add('profile-dialog');
     const body = document.createElement('div'); body.className = 'dlg-body me-space';
-    body.innerHTML = `
-      <div class="me-profile-head">
-        <div class="me-avatar" id="me-avatar">ME</div>
-        <div><h3 id="me-name">Mon profil</h3><p id="me-email-view" class="me-muted"></p></div>
-        <button class="btn btn-line" type="button" id="me-logout">Se déconnecter</button>
-      </div>
-      <div class="me-space-grid">
-        <section class="me-panel">
-          <h3>Profil public</h3>
-          <form id="profileForm" class="me-form">
-            <div><label for="p-display">Nom affiché</label><input id="p-display" maxlength="100" required></div>
-            <div><label for="p-username">Pseudo</label><input id="p-username" maxlength="30" pattern="[A-Za-z0-9_-]{3,30}" required></div>
-            <div><label for="p-city">Ville</label><input id="p-city" maxlength="120"></div>
-            <div><label for="p-region">Région</label><select id="p-region"></select></div>
-            <div class="full"><label for="p-bio">Bio</label><textarea id="p-bio" maxlength="500"></textarea></div>
-            <div class="full"><label for="p-website">Site web</label><input id="p-website" type="url" maxlength="300" placeholder="https://"></div>
-            <div class="full"><label for="p-avatar">Photo de profil</label><input id="p-avatar" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG ou WebP — 5 Mo maximum.</small></div>
-            <button class="btn btn-orange" type="submit">Enregistrer mon profil</button>
-            <p id="profileStatus" class="me-status" aria-live="polite"></p>
-          </form>
-        </section>
-        <section class="me-panel">
-          <div class="me-panel-head"><div><h3>Mes événements</h3><p class="me-muted">Suivez vos annonces et leur validation.</p></div><button class="btn btn-orange" type="button" id="me-add-event">Ajouter</button></div>
-          <div id="myEvents" class="my-events"></div>
-        </section>
-      </div>`;
-    d.append(body); document.body.append(d);
 
-    const regionSelect = $('#p-region', d);
-    REGIONS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r || 'Région'; regionSelect.append(o); });
-    $('#me-logout', d).addEventListener('click', async () => { await supabase.auth.signOut(); d.close(); });
-    $('#me-add-event', d).addEventListener('click', () => { d.close(); openAddForAuthenticated(); });
-    $('#profileForm', d).addEventListener('submit', saveProfile);
-    $('#p-avatar', d).addEventListener('change', ev => { if (ev.target.files[0] && !allowedImage(ev.target.files[0])) { ev.target.value = ''; notify('Image refusée : JPG, PNG ou WebP, 5 Mo maximum.'); } });
+    const head = document.createElement('section'); head.className = 'profile-hero';
+    const avatar = document.createElement('div'); avatar.className = 'me-avatar profile-avatar-large'; avatar.id = 'me-avatar';
+    const identity = document.createElement('div'); identity.className = 'profile-identity';
+    const name = document.createElement('h3'); name.id = 'me-name'; name.textContent = 'Mon profil';
+    const handle = document.createElement('p'); handle.id = 'me-email-view'; handle.className = 'me-muted';
+    const stats = document.createElement('div'); stats.className = 'profile-stats';
+    [['profileFollowers','Abonnés'],['profileFollowing','Abonnements'],['profileWishCount','Wishlist']].forEach(([id,label]) => {
+      const item=document.createElement('div'); const value=document.createElement('strong'); value.id=id; value.textContent='0'; const lab=document.createElement('span'); lab.textContent=label; item.append(value,lab); stats.append(item);
+    });
+    identity.append(name, handle, stats); head.append(avatar, identity);
+    const logout = document.createElement('button'); logout.className='btn btn-line profile-logout'; logout.type='button'; logout.textContent='Se déconnecter'; head.append(logout);
+    body.append(head);
+
+    const tabs=document.createElement('div'); tabs.className='profile-tabs';
+    [['overview','Profil'],['wishlist','♡ Wishlist'],['following','Abonnements'],['events','Mes événements']].forEach(([key,label],i)=>{
+      const b=document.createElement('button'); b.type='button'; b.dataset.profileTab=key; b.textContent=label; if(!i)b.classList.add('active'); tabs.append(b);
+    });
+    body.append(tabs);
+
+    const overview=document.createElement('section'); overview.dataset.profilePanel='overview'; overview.className='profile-panel-grid';
+    const panel=document.createElement('section'); panel.className='me-panel profile-edit-panel';
+    const ph=document.createElement('div'); ph.className='panel-title-row'; const pt=document.createElement('div'); const ptitle=document.createElement('h3'); ptitle.textContent='Informations publiques'; const psub=document.createElement('p'); psub.className='me-muted'; psub.textContent='Ces informations peuvent être visibles par les autres membres.'; pt.append(ptitle,psub); ph.append(pt);
+    const form=document.createElement('form'); form.id='profileForm'; form.className='me-form';
+    const mk=(label,id,type='text',placeholder='')=>{const w=document.createElement('div'); const l=document.createElement('label'); l.htmlFor=id; l.textContent=label; const i=document.createElement('input'); i.id=id;i.type=type;i.maxLength=type==='url'?300:120;if(placeholder)i.placeholder=placeholder;w.append(l,i);return w;};
+    form.append(mk('Nom affiché','p-display'),mk('Pseudo','p-username'),mk('Ville','p-city'));
+    const rw=document.createElement('div'); const rl=document.createElement('label'); rl.htmlFor='p-region';rl.textContent='Région';const rs=document.createElement('select');rs.id='p-region';rw.append(rl,rs);form.append(rw);
+    const bio=mk('Bio','p-bio'); bio.classList.add('full'); bio.querySelector('input').remove(); const ta=document.createElement('textarea');ta.id='p-bio';ta.maxLength=500;bio.append(ta);form.append(bio);
+    const web=mk('Site web','p-website','url','https://'); web.classList.add('full'); form.append(web);
+    const av=document.createElement('div');av.className='full';const al=document.createElement('label');al.htmlFor='p-avatar';al.textContent='Photo de profil';const af=document.createElement('input');af.id='p-avatar';af.type='file';af.accept='image/jpeg,image/png,image/webp';const ah=document.createElement('small');ah.textContent='JPG, PNG ou WebP — 5 Mo maximum.';av.append(al,af,ah);form.append(av);
+    const save=document.createElement('button');save.className='btn btn-orange';save.type='submit';save.textContent='Enregistrer mon profil';form.append(save);
+    const status=document.createElement('p');status.id='profileStatus';status.className='me-status';status.setAttribute('aria-live','polite');form.append(status);
+    panel.append(ph,form);
+    const side=document.createElement('aside');side.className='me-panel profile-side-panel';
+    side.append(el('div',{class:'profile-side-icon',text:'⌁'}),el('h3',{text:'Construisez votre réseau'}),el('p',{class:'me-muted',text:'Suivez les organisateurs que vous aimez et retrouvez leurs prochains événements dans vos abonnements.'}));
+    const manage=document.createElement('div');manage.className='profile-side-links';
+    [['wishlist','♡','Ma wishlist','Enregistrez les rassos à ne pas manquer'],['following','＋','Mes abonnements','Retrouvez vos organisateurs suivis']].forEach(([tab,iconTxt,titleTxt,desc])=>{const b=document.createElement('button');b.type='button';b.dataset.goProfileTab=tab;b.append(el('span',{class:'side-link-icon',text:iconTxt}),el('span',{},el('strong',{text:titleTxt}),el('small',{text:desc})));manage.append(b);});
+    side.append(manage); overview.append(panel,side); body.append(overview);
+
+    const wishlist=document.createElement('section');wishlist.dataset.profilePanel='wishlist';wishlist.className='profile-list-panel';wishlist.hidden=true;
+    wishlist.append(el('div',{class:'panel-title-row'},el('div',{},el('h3',{text:'Ma wishlist'}),el('p',{class:'me-muted',text:'Les événements que vous avez enregistrés.'})));const wishBox=document.createElement('div',{class:'social-list'});wishBox.id='profileWishlist';wishlist.append(wishBox);body.append(wishlist);
+
+    const following=document.createElement('section');following.dataset.profilePanel='following';following.className='profile-list-panel';following.hidden=true;
+    following.append(el('div',{class:'panel-title-row'},el('div',{},el('h3',{text:'Mes abonnements'}),el('p',{class:'me-muted',text:'Les organisateurs et passionnés que vous suivez.'})));const followBox=document.createElement('div',{class:'social-list'});followBox.id='profileFollowing';following.append(followBox);body.append(following);
+
+    const events=document.createElement('section');events.dataset.profilePanel='events';events.className='profile-list-panel';events.hidden=true;
+    const eh=document.createElement('div');eh.className='panel-title-row';eh.append(el('div',{},el('h3',{text:'Mes événements'}),el('p',{class:'me-muted',text:'Suivez vos annonces et leur validation.'})));const add=document.createElement('button');add.id='me-add-event';add.className='btn btn-orange';add.type='button';add.textContent='Ajouter un événement';eh.append(add);events.append(eh);const my=document.createElement('div');my.id='myEvents';my.className='my-events';events.append(my);body.append(events);
+
+    d.append(body);
+    const regionSelect=$('#p-region',d); REGIONS.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r||'Région';regionSelect.append(o);});
+    const activateTab=(key)=>{d.querySelectorAll('[data-profile-tab]').forEach(b=>b.classList.toggle('active',b.dataset.profileTab===key));d.querySelectorAll('[data-profile-panel]').forEach(p=>p.hidden=p.dataset.profilePanel!==key);if(key==='wishlist')renderWishlist();if(key==='following')renderFollowing();if(key==='events')renderMyEvents();};
+    d.querySelectorAll('[data-profile-tab]').forEach(b=>b.addEventListener('click',()=>activateTab(b.dataset.profileTab)));
+    d.querySelectorAll('[data-go-profile-tab]').forEach(b=>b.addEventListener('click',()=>activateTab(b.dataset.goProfileTab)));
+    logout.addEventListener('click',async()=>{await supabase.auth.signOut();d.close();});
+    add.addEventListener('click',()=>{d.close();openAddForAuthenticated();});
+    form.addEventListener('submit',saveProfile);
+    af.addEventListener('change',ev=>{if(ev.target.files[0]&&!allowedImage(ev.target.files[0])){ev.target.value='';notify('Image refusée : JPG, PNG ou WebP, 5 Mo maximum.');}});
     return d;
+  }
+
+  function el(tag, attrs={}, ...children){
+    const n=document.createElement(tag); Object.entries(attrs||{}).forEach(([k,v])=>{if(k==='class')n.className=v;else if(k==='text')n.textContent=v;else if(k.startsWith('data-'))n.setAttribute(k,v);else n.setAttribute(k,v);});
+    children.flat().forEach(c=>{if(c)n.append(c)}); return n;
+  }
+
+  function buildPublicProfileDialog(){
+    const d=modalBase('publicProfileDlg','Profil'); d.classList.add('public-profile-dialog'); const body=document.createElement('div');body.className='dlg-body';body.id='publicProfileBody';body.append(el('div',{class:'public-profile-loading',text:'Chargement du profil…'}));d.append(body);return d;
   }
 
   function buildAdminDialog() {
@@ -200,7 +234,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     const ids = [...new Set(rows.map(e => e.user_id).filter(Boolean))];
     let profiles = {};
     if (ids.length) {
-      const result = await supabase.from('profiles').select('id,display_name,username').in('id', ids);
+      const result = await supabase.from('profiles').select('id,display_name,username,avatar_url').in('id', ids);
       (result.data || []).forEach(p => { profiles[p.id] = p; });
     }
     const mapped = rows.map(e => ({
@@ -217,11 +251,89 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     const { data } = await supabase.auth.getSession();
     session = data.session;
     await loadProfile();
+    await loadSocialState();
     renderAccountButton();
     await loadApprovedEvents();
     if (session && profile?.role && ['admin', 'moderator'].includes(profile.role)) {
       document.body.classList.add('is-admin');
     } else document.body.classList.remove('is-admin');
+  }
+
+
+  async function loadSocialState(){
+    if(!session) return;
+    const {data:favs}=await supabase.from('favorites').select('event_id').eq('user_id',session.user.id);
+    const local=JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]');
+    const dbIds=(favs||[]).map(x=>1000000000+Number(x.event_id));
+    try{localStorage.setItem('motors-events-favorites-v1',JSON.stringify([...new Set([...local,...dbIds])].filter(Number.isInteger).slice(0,200)));}catch(_){ }
+    const {data:following}=await supabase.from('follows').select('following_id').eq('follower_id',session.user.id);
+    window.ME_SOCIAL_FOLLOWING=new Set((following||[]).map(x=>x.following_id));
+  }
+
+  async function toggleFavorite(event){
+    if(!session){notify('Connectez-vous pour enregistrer un événement dans votre wishlist.');accountDialog.showModal();return false;}
+    if(event.source==='supabase' && event.dbId){
+      const active=isFavoriteLocal(event.id);
+      const result=active?await supabase.from('favorites').delete().eq('user_id',session.user.id).eq('event_id',event.dbId):await supabase.from('favorites').insert({user_id:session.user.id,event_id:event.dbId});
+      if(result.error){notify(result.error.message);return active;}
+      setFavoriteLocal(event.id,!active);
+      notify(!active?'Événement ajouté à votre wishlist.':'Événement retiré de votre wishlist.',true);
+      if(profileDialog?.open) updateProfileCounts();
+      return !active;
+    }
+    const active=isFavoriteLocal(event.id); setFavoriteLocal(event.id,!active); return !active;
+  }
+  function isFavoriteLocal(id){try{const a=JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]');return Array.isArray(a)&&a.includes(id);}catch(_){return false;}}
+  function setFavoriteLocal(id,on){try{const a=Array.isArray(JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]'))?JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]'):[];const next=on?[...new Set([...a,id])]:a.filter(x=>x!==id);localStorage.setItem('motors-events-favorites-v1',JSON.stringify(next));window.dispatchEvent(new CustomEvent('motors:favorites-changed'));}catch(_){}}
+
+  async function followUser(userId){
+    if(!session){notify('Connectez-vous pour suivre un membre.');accountDialog.showModal();return false;}
+    if(userId===session.user.id){notify('Vous ne pouvez pas vous suivre vous-même.');return false;}
+    const following=window.ME_SOCIAL_FOLLOWING||new Set(); const active=following.has(userId);
+    const result=active?await supabase.from('follows').delete().eq('follower_id',session.user.id).eq('following_id',userId):await supabase.from('follows').insert({follower_id:session.user.id,following_id:userId});
+    if(result.error){notify(result.error.message);return active;}
+    if(active)following.delete(userId);else following.add(userId);window.ME_SOCIAL_FOLLOWING=following;
+    return !active;
+  }
+
+  async function socialCount(userId,type){
+    if(!supabase) return 0;
+    const {data,error}=await supabase.rpc('get_follow_counts',{target_user:userId});
+    if(error || !data?.length) return 0;
+    return Number(type==='followers'?data[0].followers:data[0].following)||0;
+  }
+
+  async function updateProfileCounts(){
+    if(!profile||!session)return;
+    const [followers,following]=await Promise.all([socialCount(session.user.id,'followers'),socialCount(session.user.id,'following')]);
+    const favs=(()=>{try{return JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]')}catch(_){return[]}})();
+    $('#profileFollowers').textContent=followers;$('#profileFollowing').textContent=following;$('#profileWishCount').textContent=favs.length;
+  }
+
+  async function renderWishlist(){
+    const box=$('#profileWishlist');if(!box||!session)return;box.textContent='Chargement…';
+    const {data:favs,error}=await supabase.from('favorites').select('event_id,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false});box.replaceChildren();
+    if(error){box.textContent=error.message;return;} if(!favs?.length){box.append(el('div',{class:'social-empty'},el('strong',{text:'Votre wishlist est vide'}),el('p',{text:'Ouvrez un événement et appuyez sur ♡ pour le garder sous la main.'})));return;}
+    const ids=favs.map(x=>x.event_id);const {data:events}=await supabase.from('events').select('id,title,category,subtype,start_date,city,region,image_url,status,user_id').in('id',ids).order('start_date',{ascending:true});
+    (events||[]).forEach(e=>{const row=el('article',{class:'social-card'},e.image_url?el('img',{src:e.image_url,alt:'',loading:'lazy'}):el('div',{class:'social-card-placeholder',text:'ME'}),el('div',{},el('strong',{text:e.title}),el('p',{text:`${e.city} · ${e.region} · ${fmtDateShort(e.start_date)}`}),el('small',{text:e.status==='approved'?'Publié':'En attente'})));row.addEventListener('click',()=>{const closeBtn=dummy=>dummy;window.dispatchEvent(new CustomEvent('motors:open-db-event',{detail:e.id}));});box.append(row);});
+  }
+  function fmtDateShort(date){try{return new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(`${date}T12:00:00`));}catch(_){return date||'';}}
+
+  async function renderFollowing(){
+    const box=$('#profileFollowing');if(!box||!session)return;box.textContent='Chargement…';const {data, error}=await supabase.from('follows').select('following_id,created_at').eq('follower_id',session.user.id).order('created_at',{ascending:false});box.replaceChildren();if(error){box.textContent=error.message;return;}if(!data?.length){box.append(el('div',{class:'social-empty'},el('strong',{text:'Aucun abonnement'}),el('p',{text:'Depuis le profil d’un organisateur, choisissez Suivre pour créer votre réseau.'})));return;}
+    const ids=data.map(x=>x.following_id);const {data:profiles}=await supabase.from('profiles').select('id,display_name,username,city,region,avatar_url,bio').in('id',ids);const map=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
+    ids.forEach(id=>{const p=map[id];if(!p)return;const row=el('article',{class:'social-card profile-follow-card'},p.avatar_url?el('img',{src:p.avatar_url,alt:'',loading:'lazy'}):el('div',{class:'social-card-placeholder',text:(p.display_name||'ME').slice(0,2).toUpperCase()}),el('div',{},el('strong',{text:p.display_name||p.username||'Membre'}),el('p',{text:p.city?`${p.city}${p.region?' · '+p.region:''}`:'Membre Motor\'s Events'}),el('small',{text:p.bio||'Organisateur / passionné'})));row.addEventListener('click',()=>openPublicProfile(id));box.append(row);});
+  }
+
+  async function openPublicProfile(userId){
+    if(!publicProfileDialog)publicProfileDialog=buildPublicProfileDialog();const box=$('#publicProfileBody');box.replaceChildren(el('div',{class:'public-profile-loading',text:'Chargement du profil…'}));publicProfileDialog.showModal();
+    const [{data:p,error},followers,following]=await Promise.all([supabase.from('profiles').select('id,display_name,username,bio,city,region,website,avatar_url').eq('id',userId).maybeSingle(),socialCount(userId,'followers'),socialCount(userId,'following')]);
+    if(error||!p){box.replaceChildren(el('p',{text:'Profil introuvable.'}));return;}
+    const isSelf=session?.user?.id===userId;const followed=window.ME_SOCIAL_FOLLOWING?.has(userId);const hero=el('section',{class:'public-profile-hero'},p.avatar_url?el('img',{src:p.avatar_url,alt:'',class:'public-avatar'}):el('div',{class:'public-avatar public-avatar-fallback',text:(p.display_name||'ME').slice(0,2).toUpperCase()}),el('div',{},el('span',{class:'profile-kicker',text:'Membre Motor\'s Events'}),el('h2',{text:p.display_name||p.username||'Membre'}),el('p',{class:'public-handle',text:p.username?`@${p.username}`:''}),el('p',{class:'public-location',text:[p.city,p.region].filter(Boolean).join(' · ')})),el('div',{class:'public-profile-action'}));
+    if(!isSelf){const b=el('button',{class:`btn ${followed?'btn-line':'btn-orange'}`,type:'button',text:followed?'✓ Abonné':'Suivre'});b.addEventListener('click',async()=>{const now=await followUser(userId);b.textContent=now?'✓ Abonné':'Suivre';b.className=`btn ${now?'btn-line':'btn-orange'}`;});hero.querySelector('.public-profile-action').append(b);}
+    const stats=el('div',{class:'public-stats'},el('div',{},el('strong',{text:String(followers)}),el('span',{text:'Abonnés'})),el('div',{},el('strong',{text:String(following)}),el('span',{text:'Abonnements'})));
+    const content=el('div',{class:'public-profile-content'},el('p',{text:p.bio||'Aucune bio renseignée.'}),p.website?el('a',{href:validUrl(p.website)?p.website:'#',target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer',text:'Visiter le site'}):null);
+    box.replaceChildren(hero,stats,content);
   }
 
   function renderProfile() {
@@ -234,6 +346,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     $('#p-region').value = profile.region || '';
     $('#p-bio').value = profile.bio || '';
     $('#p-website').value = profile.website || '';
+    updateProfileCounts();
     const a = $('#me-avatar'); a.replaceChildren();
     if (profile.avatar_url) { const img = document.createElement('img'); img.src = profile.avatar_url; img.alt = ''; img.loading = 'lazy'; a.append(img); }
     else a.textContent = (profile.display_name || 'ME').slice(0, 2).toUpperCase();
@@ -402,7 +515,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     $('#f-img')?.addEventListener('change', ev => { if (ev.target.files[0] && !allowedImage(ev.target.files[0])) { ev.target.value = ''; notify('Image refusée : JPG, PNG ou WebP, 5 Mo maximum.'); } });
     $('#profileDlg')?.addEventListener('close', () => { editingEventId = null; });
     const adminButton = document.createElement('button'); adminButton.className = 'btn btn-orange admin-open'; adminButton.type = 'button'; adminButton.textContent = '🛡️ Modération'; adminButton.hidden = true; adminButton.addEventListener('click', () => { renderAdmin(); adminDialog.showModal(); });
-    $('.me-profile-head')?.append(adminButton);
+    $('.profile-hero')?.append(adminButton);
+    publicProfileDialog = buildPublicProfileDialog();
+    window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile };
   }
 
   async function main() {
@@ -412,11 +527,16 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     supabase.auth.onAuthStateChange((_event, newSession) => {
       session = newSession;
       queueMicrotask(async () => {
-        await loadProfile(); renderAccountButton();
+        await loadProfile(); await loadSocialState(); renderAccountButton();
         const adminBtn = $('.admin-open');
         if (adminBtn) adminBtn.hidden = !(session && ['admin', 'moderator'].includes(profile?.role));
         await loadApprovedEvents();
       });
+    });
+    window.addEventListener('motors:open-db-event', ev => {
+      const id=Number(ev.detail);
+      const btn=document.querySelector(`[data-db-event-id=\"${id}\"]`);
+      if(btn) btn.click();
     });
     await refresh();
   }

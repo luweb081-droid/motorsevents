@@ -1,45 +1,40 @@
-# Motor's Events — V3 Supabase
+# Motor's Events — Supabase
 
-## 1. Supabase
-1. Ouvre ton projet Supabase.
-2. SQL Editor → New query.
-3. Colle `supabase.sql` → Run.
-4. Vérifie `profiles`, `events`, `favorites` dans Table Editor.
-5. Vérifie `avatars` et `event-images` dans Storage.
+## 1. Configuration
 
-## 2. Configuration
-Dans `supabase-config.js`, garde uniquement :
-- Project URL
-- Publishable key (`sb_publishable_...`)
+Dans `supabase-config.js`, conserve uniquement :
+- l'URL de ton projet Supabase
+- la clé **Publishable** (`sb_publishable_...`)
 
-Ne mets jamais de `sb_secret_...` dans le site.
+Ne mets jamais `sb_secret_...` dans le frontend.
 
-## 3. Lancer le site
-Ne double-clique pas sur `index.html`. Utilise un serveur local, par exemple :
+## 2. Base déjà installée
 
-```bash
-python -m http.server 5500
-```
+Le fichier `supabase.sql` contient le schéma principal : profils, événements, favoris, RLS et Storage.
 
-Puis ouvre `http://localhost:5500`.
+Si le schéma principal est déjà installé, **ne le relance pas inutilement**.
 
-## 4. Authentification
-Dans Supabase → Authentication → URL Configuration, ajoute ton URL locale et ton URL Vercel.
+## 3. Nouvelle fonctionnalité sociale
 
-Exemple :
-- `http://localhost:5500`
-- `https://ton-projet.vercel.app`
+Pour activer la wishlist synchronisée et les abonnements entre membres :
 
-## 5. Compte test
-Tu peux créer un utilisateur depuis Authentication → Users, ou depuis le bouton Compte du site.
-Le trigger SQL crée automatiquement sa ligne `profiles`.
+1. Supabase → SQL Editor → New query
+2. Ouvre `supabase-social.sql`
+3. Copie tout le contenu
+4. Clique sur **Run**
 
-## 6. Admin
-Après avoir créé ton compte, dans Table Editor → profiles, change `role` de `user` à `admin` pour ton propre compte de test. Le site affichera alors l'espace de modération.
+Ce fichier ajoute la table `follows`, ses index, ses policies RLS et la fonction sécurisée utilisée pour compter les abonnés/abonnements sans exposer publiquement les relations.
 
+## 4. Fonctionnement
 
-## Sécurité
-- La clé `sb_publishable_...` peut être utilisée côté navigateur ; ne mets jamais de clé `sb_secret_...`.
-- Les permissions importantes sont appliquées par RLS côté Supabase, pas seulement par l'interface.
-- Le rôle `admin` est protégé côté base : un utilisateur normal ne peut pas se promouvoir lui-même.
-- Pour une mise en production plus avancée, ajoute une protection anti-abus/rate limiting et surveille les logs Supabase.
+- Un visiteur peut consulter les profils publics.
+- Un membre connecté peut suivre un autre membre.
+- Un membre ne peut pas se suivre lui-même.
+- Les abonnements sont privés à leur propriétaire via RLS.
+- La wishlist des événements Supabase est stockée dans `favorites`.
+- Les événements ajoutés à la wishlist restent liés au compte après reconnexion.
+- Les événements normaux restent soumis au workflow `pending → approved/rejected`.
+
+## 5. Sécurité
+
+Le frontend utilise uniquement la clé Publishable. Les permissions sensibles sont appliquées côté PostgreSQL avec les grants et RLS.

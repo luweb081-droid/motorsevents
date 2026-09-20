@@ -227,7 +227,7 @@
     updateFavCount();
   };
   const isFav = id => getFavs().includes(id);
-  function toggleFav(id){ const f=getFavs(); const i=f.indexOf(id); i>=0?f.splice(i,1):f.push(id); setFavs(f); }
+  function toggleFav(id){ const e=ALL_EVENTS.find(x=>x.id===id); if(window.ME_SOCIAL && e && e.source==='supabase'){ window.ME_SOCIAL.toggleFavorite(e); return; } const f=getFavs(); const i=f.indexOf(id); i>=0?f.splice(i,1):f.push(id); setFavs(f); }
   function updateFavCount(){ $('#favCount').textContent=getFavs().length; }
 
   const eventDlg=$('#eventDlg'), eventDetail=$('#eventDetail');
@@ -266,7 +266,10 @@
       el('h3',{text:'Photos'}), el('div',{class:'gallery'}, el('div'),el('div'),el('div'))
     ));
     const right=el('aside');
-    const org=el('div',{class:'detail-box'},el('h3',{text:'Organisateur'}),el('div',{class:'organizer'},el('div',{class:'organizer-avatar',text:(e.organizer||'ME').slice(0,2).toUpperCase()}),el('div',{},el('strong',{text:e.organizer||'Organisateur'}),e.verified?el('span',{class:'verified',text:'✓ Organisateur vérifié'}):null)));
+    const orgAvatar=e.organizerAvatar?el('img',{src:e.organizerAvatar,alt:'',class:'organizer-avatar-img',loading:'lazy'}):el('div',{class:'organizer-avatar',text:(e.organizer||'ME').slice(0,2).toUpperCase()});
+    const orgButton=el('button',{class:'organizer-link',type:'button'},orgAvatar,el('div',{},el('strong',{text:e.organizer||'Organisateur'}),e.verified?el('span',{class:'verified',text:'✓ Organisateur vérifié'}):null));
+    if(e.organizerId && window.ME_SOCIAL?.openPublicProfile) orgButton.addEventListener('click',()=>window.ME_SOCIAL.openPublicProfile(e.organizerId));
+    const org=el('div',{class:'detail-box'},el('h3',{text:'Organisateur'}),orgButton);
     right.append(org);
     const infoBox = el('div',{class:'detail-box'});
     infoBox.append(el('h3',{text:'Informations'}));
@@ -281,6 +284,7 @@
     layout.append(left,right); content.append(layout); eventDetail.append(hero,content); eventDlg.showModal();
   }
   eventDlg.addEventListener('click',ev=>{if(ev.target===eventDlg)eventDlg.close()});
+  window.addEventListener('motors:open-db-event', ev => { const id=Number(ev.detail); const e=ALL_EVENTS.find(x=>x.dbId===id); if(e) openEvent(e.id); });
 
   function renderFeatured(){
     const top=ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
@@ -332,7 +336,7 @@
     try { localStorage.setItem(ALERT_KEY, JSON.stringify(payload)); } catch (_) {}
     $('#alertStatus').textContent='Alerte enregistrée sur cet appareil.';
   });
-  updateFavCount(); renderFeatured();
+  updateFavCount(); window.addEventListener('motors:favorites-changed', updateFavCount); renderFeatured();
 
   window.addEventListener('motors:supabase-events', ev => {
     const incoming = Array.isArray(ev.detail) ? ev.detail : [];

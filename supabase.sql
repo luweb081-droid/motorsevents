@@ -62,29 +62,12 @@ as $$
     select 1
     from public.profiles
     where id = (select auth.uid())
-      and role = 'admin'
-  );
-$$;
-
-create or replace function private.is_moderator()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.profiles
-    where id = (select auth.uid())
       and role in ('admin','moderator')
   );
 $$;
 
 revoke all on function private.is_admin() from public;
-revoke all on function private.is_moderator() from public;
 grant execute on function private.is_admin() to authenticated;
-grant execute on function private.is_moderator() to authenticated;
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -139,7 +122,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_moderator() and (select auth.uid()) = old.user_id then
+  if not private.is_admin() and (select auth.uid()) = old.user_id then
     new.status = 'pending';
     new.rejection_reason = null;
   end if;
@@ -151,26 +134,6 @@ drop trigger if exists protect_event_status on public.events;
 create trigger protect_event_status
 before update on public.events
 for each row execute procedure public.protect_event_status();
-
-drop trigger if exists protect_profile_role on public.profiles;
-create or replace function public.protect_profile_role()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if not private.is_admin() then
-    new.role = old.role;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists protect_profile_role on public.profiles;
-create trigger protect_profile_role
-before update on public.profiles
-for each row execute procedure public.protect_profile_role();
 
 alter table public.profiles enable row level security;
 alter table public.events enable row level security;
@@ -217,7 +180,7 @@ drop policy if exists "Anyone can read approved events" on public.events;
 create policy "Anyone can read approved events"
 on public.events for select
 to anon, authenticated
-using (status = 'approved' or (select auth.uid()) = user_id or (select private.is_moderator()));
+using (status = 'approved' or (select auth.uid()) = user_id or (select private.is_admin()));
 
 drop policy if exists "Authenticated users can submit events" on public.events;
 create policy "Authenticated users can submit events"
@@ -229,9 +192,9 @@ drop policy if exists "Owners can edit their events" on public.events;
 create policy "Owners can edit their events"
 on public.events for update
 to authenticated
-using ((select auth.uid()) = user_id or (select private.is_moderator()))
+using ((select auth.uid()) = user_id or (select private.is_admin()))
 with check (
-  (select private.is_moderator())
+  (select private.is_admin())
   or ((select auth.uid()) = user_id and status in ('pending','rejected'))
 );
 
@@ -239,7 +202,7 @@ drop policy if exists "Owners can delete their events" on public.events;
 create policy "Owners can delete their events"
 on public.events for delete
 to authenticated
-using ((select auth.uid()) = user_id or (select private.is_moderator()));
+using ((select auth.uid()) = user_id or (select private.is_admin()));
 
 -- Favorites are strictly private to their owner.
 drop policy if exists "Users can read their favorites" on public.favorites;
