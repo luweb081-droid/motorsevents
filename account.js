@@ -215,31 +215,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   }
 
   function renderAccountButton() {
-    const b = $('#accountBtn');
-    const favorites = $('#favoritesBtn');
-    const alerts = $('#alertsBtn');
-    const headerAdd = $('#headerAddBtn');
-    if (!b) return;
-
-    // Les fonctions réservées aux membres restent totalement masquées
-    // tant qu'aucune session Supabase n'est active.
-    const connected = Boolean(session);
-    if (favorites) favorites.hidden = !connected;
-    if (alerts) alerts.hidden = !connected;
-    if (headerAdd) headerAdd.hidden = !connected;
-
-    if (connected) {
-      b.textContent = profile?.display_name
-        ? `👤 ${profile.display_name.slice(0, 18)}`
-        : '👤 Mon profil';
-      b.setAttribute('aria-label', 'Mon profil');
-      b.classList.add('connected');
-    } else {
-      // Le seul bouton conservé hors connexion permet d'ouvrir la connexion.
-      b.textContent = 'Se connecter';
-      b.setAttribute('aria-label', 'Se connecter');
-      b.classList.remove('connected');
-    }
+    const b = $('#accountBtn'); if (!b) return;
+    if (session) { b.textContent = profile?.display_name ? `👤 ${profile.display_name.slice(0, 18)}` : '👤 Mon profil'; b.classList.add('connected'); }
+    else { b.textContent = 'Compte'; b.classList.remove('connected'); }
   }
 
   async function loadProfile() {
@@ -480,22 +458,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       if (up.error) { notify(up.error.message); return; }
       image_url = supabase.storage.from('event-images').getPublicUrl(path).data.publicUrl;
     }
-  const payload = {
-    title,
-    category,
-    subtype,
-    start_date: start,
-    end_date: end,
-    starts_at: `${start}T00:00:00`,
-    ends_at: end ? `${end}T23:59:59` : null,
-    place,
-    city,
-    region,
-    description: desc,
-    official_url: url || null
-  };
-
-if (image_url) payload.image_url = image_url;
+    const payload = { title, category, subtype, start_date: start, end_date: end, place, city, region, description: desc, official_url: url || null };
+    if (image_url) payload.image_url = image_url;
     let result;
     if (editingEventId) {
       result = await supabase.from('events').update(payload).eq('id', editingEventId).eq('user_id', session.user.id);

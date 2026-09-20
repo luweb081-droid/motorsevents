@@ -62,19 +62,38 @@
 
 <main id="top">
   <section class="hero on-dark" aria-labelledby="titre">
-    <div class="wrap">
-      <h1 id="titre">Ne ratez plus aucun rasso.</h1>
-      <p class="lede">Auto, moto, quad, truck, nautisme, aviation : tous les événements de France, publiés par les clubs et les passionnés.</p>
+  <div class="hero-car" aria-hidden="true">
+  <img src="aa.jpg" alt="" loading="eager">
+</div>
+
+  <div class="wrap hero-content">
+    <div class="hero-copy">
+      <span class="hero-kicker">
+        <span></span> LE CALENDRIER DES PASSIONNÉS
+      </span>
+
+      <h1 id="titre">
+        Ne ratez plus<br>
+        aucun <em>rasso.</em>
+      </h1>
+
+      <p class="lede">
+        Auto, moto, quad, truck, nautisme, aviation :
+        tous les événements de France, publiés par les clubs
+        et les passionnés.
+      </p>
 
       <form class="searchbar" id="search" role="search" aria-label="Rechercher un événement">
         <div class="sb-field">
           <label for="what">Quoi</label>
           <input id="what" type="search" placeholder="Rassemblement, rallye, balade…" autocomplete="off">
         </div>
+
         <div class="sb-field">
           <label for="where">Où</label>
           <input id="where" type="search" placeholder="Ville ou région" autocomplete="off">
         </div>
+
         <div class="sb-field">
           <label for="when">Quand</label>
           <select id="when">
@@ -83,13 +102,31 @@
             <option value="all">Toutes les dates</option>
           </select>
         </div>
+
         <button class="btn btn-orange btn-search" type="submit">
-          <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+          <svg class="icon" aria-hidden="true">
+            <use href="#i-search"></use>
+          </svg>
           Rechercher
         </button>
       </form>
     </div>
-  </section>
+  </div>
+
+  <div class="hero-bottom">
+    <div class="wrap hero-bottom-inner">
+      <div>
+        <strong>RASSEMBLEMENTS</strong>
+        <span>Les passionnés se retrouvent ici.</span>
+      </div>
+
+      <div class="hero-scroll">
+        <span>SCROLL</span>
+        <span class="hero-scroll-line"></span>
+      </div>
+    </div>
+  </div>
+</section>
 
   <section class="quick-tools">
     <div class="wrap quick-tools-grid">
