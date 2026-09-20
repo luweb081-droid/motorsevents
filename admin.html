@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="robots"
+    content="noindex,nofollow"
+  >
+
+  <title>Administration — Motor's Events</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <div id="loadingScreen" class="screen">
+    <div class="loader"></div>
+    <p>Vérification des accès…</p>
+  </div>
+
+  <div id="blockedScreen" class="screen hidden">
+    <div class="blocked-card">
+      <div class="blocked-icon">×</div>
+
+      <span class="eyebrow">ACCÈS RESTREINT</span>
+
+      <h1>Accès administrateur requis</h1>
+
+      <p>
+        Cette page est réservée aux administrateurs
+        de Motor's Events.
+      </p>
+
+      <a href="index.html" class="btn btn-dark">
+        Retour au site
+      </a>
+    </div>
+  </div>
+
+  <div id="adminApp" class="hidden">
+
+    <header class="admin-header">
+
+      <div class="admin-brand">
+        <div class="brand-mark">
+          <span></span>
+        </div>
+
+        <div>
+          <strong>Motor's Events</strong>
+          <small>Administration</small>
+        </div>
+      </div>
+
+      <div class="admin-header-right">
+
+        <span id="adminName">
+          Administrateur
+        </span>
+
+        <button
+          id="logoutBtn"
+          class="logout-btn"
+          type="button"
+        >
+          Déconnexion
+        </button>
+
+      </div>
+
+    </header>
+
+    <main class="admin-main">
+
+      <section class="admin-hero">
+
+        <div>
+          <span class="eyebrow">
+            CENTRE DE MODÉRATION
+          </span>
+
+          <h1>
+            Administration
+          </h1>
+
+          <p>
+            Gérez les événements soumis par la communauté
+            avant leur publication.
+          </p>
+        </div>
+
+        <button
+          id="refreshBtn"
+          class="btn btn-light"
+          type="button"
+        >
+          ↻ Actualiser
+        </button>
+
+      </section>
+
+
+      <section class="stats">
+
+        <article class="stat-card">
+          <span>En attente</span>
+          <strong id="pendingCount">0</strong>
+        </article>
+
+        <article class="stat-card">
+          <span>Approuvés</span>
+          <strong id="approvedCount">0</strong>
+        </article>
+
+        <article class="stat-card">
+          <span>Refusés</span>
+          <strong id="rejectedCount">0</strong>
+        </article>
+
+      </section>
+
+
+      <section class="moderation">
+
+        <div class="section-head">
+
+          <div>
+            <span class="eyebrow">
+              MODÉRATION
+            </span>
+
+            <h2>
+              Événements en attente
+            </h2>
+          </div>
+
+          <span id="pendingLabel" class="count-label">
+            0 événement
+          </span>
+
+        </div>
+
+
+        <div
+          id="eventList"
+          class="event-list"
+        ></div>
+
+
+        <div
+          id="emptyState"
+          class="empty-state hidden"
+        >
+          <div class="empty-icon">✓</div>
+
+          <h3>
+            Tout est à jour
+          </h3>
+
+          <p>
+            Aucun événement n'attend actuellement
+            de validation.
+          </p>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <div
+    id="toast"
+    class="toast"
+    aria-live="polite"
+  ></div>
+
+
+  <dialog id="rejectDialog">
+
+    <form
+      method="dialog"
+      id="rejectForm"
+      class="reject-modal"
+    >
+
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">
+            MODÉRATION
+          </span>
+
+          <h2>
+            Refuser l'événement
+          </h2>
+        </div>
+
+        <button
+          value="cancel"
+          class="modal-close"
+          type="submit"
+        >
+          ×
+        </button>
+      </div>
+
+      <p>
+        Indique la raison du refus.
+        Elle pourra être affichée au créateur.
+      </p>
+
+      <textarea
+        id="rejectReason"
+        maxlength="1000"
+        placeholder="Ex : informations insuffisantes, événement non vérifiable..."
+        required
+      ></textarea>
+
+      <div class="modal-actions">
+
+        <button
+          type="submit"
+          value="cancel"
+          class="btn btn-light"
+        >
+          Annuler
+        </button>
+
+        <button
+          id="confirmReject"
+          type="button"
+          class="btn btn-danger"
+        >
+          Refuser l'événement
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <script type="module" src="admin.js"></script>
+
+</body>
+</html>
