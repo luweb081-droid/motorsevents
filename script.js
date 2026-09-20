@@ -203,14 +203,9 @@
     const desc = $('#f-desc').value.trim();
     const url = $('#f-url').value.trim();
     if (!title || !place || !desc) return;
-    if (url) {
-      try {
-        const u = new URL(url);
-        if (!['http:', 'https:'].includes(u.protocol)) throw new Error();
-      } catch (_) {
-        alert('Le lien officiel doit commencer par http:// ou https://.');
-        return;
-      }
+    if (url) { try { const u = new URL(url); if (!['http:','https:'].includes(u.protocol)) throw new Error(); } catch (_) { {
+      alert('Le lien officiel doit commencer par http:// ou https://.');
+      return;
     }
     form.hidden = true;
     done.hidden = false;
