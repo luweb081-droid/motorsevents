@@ -480,8 +480,22 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       if (up.error) { notify(up.error.message); return; }
       image_url = supabase.storage.from('event-images').getPublicUrl(path).data.publicUrl;
     }
-    const payload = { title, category, subtype, start_date: start, end_date: end, place, city, region, description: desc, official_url: url || null };
-    if (image_url) payload.image_url = image_url;
+  const payload = {
+    title,
+    category,
+    subtype,
+    start_date: start,
+    end_date: end,
+    starts_at: `${start}T00:00:00`,
+    ends_at: end ? `${end}T23:59:59` : null,
+    place,
+    city,
+    region,
+    description: desc,
+    official_url: url || null
+  };
+
+if (image_url) payload.image_url = image_url;
     let result;
     if (editingEventId) {
       result = await supabase.from('events').update(payload).eq('id', editingEventId).eq('user_id', session.user.id);
