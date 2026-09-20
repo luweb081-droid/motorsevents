@@ -36,3 +36,10 @@ Le trigger SQL crée automatiquement sa ligne `profiles`.
 
 ## 6. Admin
 Après avoir créé ton compte, dans Table Editor → profiles, change `role` de `user` à `admin` pour ton propre compte de test. Le site affichera alors l'espace de modération.
+
+
+## Sécurité
+- La clé `sb_publishable_...` peut être utilisée côté navigateur ; ne mets jamais de clé `sb_secret_...`.
+- Les permissions importantes sont appliquées par RLS côté Supabase, pas seulement par l'interface.
+- Le rôle `admin` est protégé côté base : un utilisateur normal ne peut pas se promouvoir lui-même.
+- Pour une mise en production plus avancée, ajoute une protection anti-abus/rate limiting et surveille les logs Supabase.
