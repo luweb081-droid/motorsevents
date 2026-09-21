@@ -91,6 +91,185 @@
   // N'affiche que les images hébergées sur Supabase Storage (https)
   const safeImg = v => { try { const u = new URL(String(v || '')); return u.protocol === 'https:' && u.hostname.endsWith('.supabase.co') ? u.href : null; } catch (_) { return null; } };
 
+  /* ===== Carte interactive de France =====
+     Les coordonnées exactes peuvent venir directement de Supabase :
+     latitude + longitude.
+     Si elles manquent, on utilise le centre approximatif de la ville/région
+     uniquement pour garder le marqueur visible. */
+  const CITY_COORDS = {
+    'paris':[48.8566,2.3522],'marseille':[43.2965,5.3698],'lyon':[45.7640,4.8357],
+    'toulouse':[43.6047,1.4442],'nice':[43.7102,7.2620],'nantes':[47.2184,-1.5536],
+    'montpellier':[43.6108,3.8767],'strasbourg':[48.5734,7.7521],'bordeaux':[44.8378,-0.5792],
+    'lille':[50.6292,3.0573],'rennes':[48.1173,-1.6778],'reims':[49.2583,4.0317],
+    'saint-etienne':[45.4397,4.3872],'toulon':[43.1242,5.9280],'grenoble':[45.1885,5.7245],
+    'dijon':[47.3220,5.0415],'angers':[47.4784,-0.5632],'nimes':[43.8367,4.3601],
+    'aix-en-provence':[43.5297,5.4474],'clermont-ferrand':[45.7772,3.0870],
+    'le havre':[49.4944,0.1079],'brest':[48.3904,-4.4861],'tours':[47.3941,0.6848],
+    'amiens':[49.8941,2.2958],'limoges':[45.8336,1.2611],'perpignan':[42.6887,2.8948],
+    'metz':[49.1193,6.1757],'besancon':[47.2378,6.0241],'orleans':[47.9030,1.9093],
+    'rouen':[49.4432,1.0993],'caen':[49.1829,-0.3707],'avignon':[43.9493,4.8055],
+    'poitiers':[46.5802,0.3404],'pau':[43.2951,-0.3708],'la rochelle':[46.1603,-1.1511],
+    'bayonne':[43.4929,-1.4748],'biarritz':[43.4832,-1.5586],'albi':[43.9298,2.1480],
+    'castres':[43.6059,2.2399],'tarbes':[43.2328,0.0781],'carcassonne':[43.2130,2.3491],
+    'montauban':[44.0176,1.3542],'rodez':[44.3499,2.5757],'auch':[43.6464,0.5856],
+    'agen':[44.2031,0.6164],'cahors':[44.4475,1.4419],'perigueux':[45.1840,0.7214],
+    'brive-la-gaillarde':[45.1589,1.5333],'bayonne':[43.4929,-1.4748],
+    'chambery':[45.5646,5.9178],'annecy':[45.8992,6.1294],'valence':[44.9334,4.8924],
+    'avignon':[43.9493,4.8055],'arles':[43.6766,4.6278],'cannes':[43.5528,7.0174],
+    'antibes':[43.5808,7.1239],'ajaccio':[41.9192,8.7386],'bastia':[42.6973,9.4509],
+    'troyes':[48.2973,4.0744],'nancy':[48.6921,6.1844],'mulhouse':[47.7508,7.3359],
+    'colmar':[48.0794,7.3585],'saint-malo':[48.6493,-2.0257],'vannes':[47.6582,-2.7608],
+    'lorient':[47.7483,-3.3702],'quimper':[47.9960,-4.1028],'lavall':[48.0707,-0.7722],
+    'le mans':[48.0061,0.1996],'cholet':[47.0594,-0.8792],'la roche-sur-yon':[46.6705,-1.4268]
+  };
+  const REGION_COORDS = {
+    'ile-de-france':[48.8499,2.6370],'hauts-de-france':[49.9629,2.8278],
+    'normandie':[49.1829,0.3707],'bretagne':[48.2020,-2.9326],
+    'pays de la loire':[47.7633,-0.3299],'centre-val de loire':[47.5496,1.6751],
+    'nouvelle-aquitaine':[45.7089,0.8109],'occitanie':[43.8927,2.2823],
+    'auvergne-rhone-alpes':[45.4479,4.3853],'bourgogne-franche-comte':[47.2805,4.9994],
+    'grand est':[48.6998,5.6000],'provence-alpes-cote d azur':[43.9352,6.0679],
+    'corse':[42.0396,9.0129],'guadeloupe':[16.2650,-61.5510],
+    'martinique':[14.6415,-61.0242],'guyane':[4.9224,-52.3135],
+    'la reunion':[-21.1351,55.5364],'mayotte':[-12.8275,45.1662]
+  };
+
+  let eventsMap = null;
+  let mapMarkers = [];
+
+  const mapNorm = value => norm(String(value || ''))
+    .replace(/['’]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  function getEventCoords(e) {
+    const lat = Number(e.latitude ?? e.lat);
+    const lng = Number(e.longitude ?? e.lng ?? e.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return { coords:[lat,lng], exact:true };
+    }
+
+    const cityKey = mapNorm(e.city);
+    if (CITY_COORDS[cityKey]) return { coords:CITY_COORDS[cityKey], exact:false };
+
+    const regionKey = mapNorm(e.region);
+    if (REGION_COORDS[regionKey]) return { coords:REGION_COORDS[regionKey], exact:false };
+
+    return null;
+  }
+
+  const MAP_COLORS = {
+    auto:'#E63946', moto:'#F58220', quad:'#2FA58A',
+    truck:'#4E6FD8', nautisme:'#2D9CDB', aviation:'#9B59B6'
+  };
+
+  function initEventsMap() {
+    if (!window.L || !document.getElementById('eventsMap')) {
+      const status = document.getElementById('mapStatus');
+      if (status) status.textContent = 'La carte interactive est momentanément indisponible.';
+      return;
+    }
+    if (eventsMap) return;
+
+    eventsMap = L.map('eventsMap', {
+      zoomControl: true,
+      scrollWheelZoom: true,
+      minZoom: 4,
+      maxZoom: 12
+    }).setView([46.55, 2.45], 5.5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(eventsMap);
+
+    setTimeout(() => eventsMap.invalidateSize(), 50);
+  }
+
+  function escapeMapHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[ch]));
+  }
+
+  function updateEventsMap(items) {
+    const count = document.getElementById('mapEventCount');
+    const status = document.getElementById('mapStatus');
+    if (count) count.textContent = String(items.length);
+
+    initEventsMap();
+    if (!eventsMap) return;
+
+    mapMarkers.forEach(marker => eventsMap.removeLayer(marker));
+    mapMarkers = [];
+
+    const bounds = [];
+    let approximateCount = 0;
+
+    items.forEach(e => {
+      const position = getEventCoords(e);
+      if (!position) return;
+
+      if (!position.exact) approximateCount++;
+      const color = MAP_COLORS[e.cat] || '#FF5B14';
+
+      const marker = L.marker(position.coords, {
+        icon: L.divIcon({
+          className: 'motor-map-marker',
+          html: `<span style="--marker-color:${color}"></span>`,
+          iconSize: [28, 36],
+          iconAnchor: [14, 34],
+          popupAnchor: [0, -30]
+        }),
+        title: e.title
+      }).addTo(eventsMap);
+
+      const date = fmt(e.date, { day:'numeric', month:'long' });
+      const url = safeExternalUrl(e.url);
+      marker.bindPopup(`
+        <div class="map-popup">
+          <span class="map-popup-cat">${escapeMapHtml(CATS[e.cat] || 'Événement')}</span>
+          <strong>${escapeMapHtml(e.title)}</strong>
+          <span>${escapeMapHtml(e.city || e.region || 'France')} · ${escapeMapHtml(date)}</span>
+          ${position.exact ? '' : '<small>Position approximative</small>'}
+          <button type="button" data-map-event="${escapeMapHtml(e.id)}">Voir l’événement</button>
+          ${url ? `<a href="${escapeMapHtml(url)}" target="_blank" rel="noopener noreferrer">Site officiel ↗</a>` : ''}
+        </div>
+      `);
+
+      marker.on('popupopen', ev => {
+        const popup = ev.popup.getElement();
+        const button = popup?.querySelector('[data-map-event]');
+        if (button) button.addEventListener('click', () => {
+          const eventId = button.getAttribute('data-map-event');
+          openEvent(Number.isNaN(Number(eventId)) ? eventId : Number(eventId));
+          eventsMap.closePopup();
+        });
+      });
+
+      mapMarkers.push(marker);
+      bounds.push(position.coords);
+    });
+
+    if (bounds.length === 1) {
+      eventsMap.setView(bounds[0], 8, { animate:false });
+    } else if (bounds.length > 1) {
+      eventsMap.fitBounds(bounds, { padding:[35,35], maxZoom:8, animate:false });
+    } else {
+      eventsMap.setView([46.55, 2.45], 5.5, { animate:false });
+    }
+
+    if (status) {
+      if (!items.length) status.textContent = 'Aucun événement ne correspond aux filtres actuels.';
+      else if (!bounds.length) status.textContent = `${items.length} événement${items.length > 1 ? 's' : ''} trouvé${items.length > 1 ? 's' : ''}. Ajoutez des coordonnées latitude/longitude dans Supabase pour afficher les pins.`;
+      else status.textContent = approximateCount
+        ? `${items.length} événement${items.length > 1 ? 's' : ''} · ${approximateCount} position${approximateCount > 1 ? 's' : ''} approximative${approximateCount > 1 ? 's' : ''}`
+        : `${items.length} événement${items.length > 1 ? 's' : ''} · positions exactes`;
+    }
+  }
+
+  initEventsMap();
+
   const whatEl = $('#what'), whereEl = $('#where'), whenEl = $('#when');
   const tilesEl = $('#tiles'), cardsEl = $('#cards'), emptyEl = $('#empty');
   const countEl = $('#count'), resetTop = $('#resetTop'), allLink = $('.all-events-link');
@@ -212,6 +391,7 @@
 
     // L'accueil n'affiche qu'un aperçu : la liste complète est sur la page « Événements »
     const n = items.length;
+    updateEventsMap(items);
     const limit = matchMedia('(max-width: 600px)').matches ? 4 : 6;
     cardsEl.replaceChildren(...items.slice(0, limit).map(card));
     emptyEl.hidden = !loaded || n > 0;
@@ -241,7 +421,7 @@
   whatEl.addEventListener('input', () => { state.what = whatEl.value; render(); });
   whereEl.addEventListener('input', () => { state.where = whereEl.value; render(); });
   whenEl.addEventListener('change', () => { state.when = whenEl.value; render(); });
-  $('#search').addEventListener('submit', ev => { ev.preventDefault(); $('#results').scrollIntoView(); });
+  $('#search').addEventListener('submit', ev => { ev.preventDefault(); render(); });
   const reset = () => { Object.assign(state, DEFAULT); render(); };
   resetTop.addEventListener('click', reset);
   $('#resetEmpty').addEventListener('click', reset);
@@ -443,5 +623,6 @@
   // Si la base ne répond pas, on arrête d'afficher « Chargement… ».
   setTimeout(() => { if (!loaded) { loaded = true; render(); } }, 8000);
 
+  window.addEventListener('resize', () => eventsMap?.invalidateSize());
   render();
 })();
