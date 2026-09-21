@@ -6,7 +6,7 @@
 <title>Motor's Events – Rassos, courses et salons auto, moto, quad, truck, nautisme, aviation</title>
 <meta name="description" content="Tous les événements auto, moto, quad, truck, nautisme et aviation en France. Publiez le vôtre gratuitement.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://cdn.jsdelivr.net data: blob:; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org data: blob:; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests">
 <meta name="permissions-policy" content="geolocation=(self), camera=(), microphone=(), payment=()">
 <!--
   Polices : chargées depuis Google Fonts pour la maquette.
@@ -78,10 +78,7 @@
 
 <main id="top">
   <section class="hero on-dark" aria-labelledby="titre">
-  <div class="hero-car" aria-hidden="true">
-  <img src="hero-car.webp" alt="" width="1186" height="774" fetchpriority="high">
-</div>
-
+  
   <div class="wrap hero-content">
     <div class="hero-copy">
       <span class="hero-kicker">
@@ -98,6 +95,12 @@
         tous les événements de France, publiés par les clubs
         et les passionnés.
       </p>
+
+      <button class="hero-add-event" id="heroAddEvent" type="button">
+        <span class="hero-add-event-icon">＋</span>
+        <span>Ajouter un événement</span>
+        <small>Publier gratuitement votre rasso</small>
+      </button>
 
       <section class="hero-map-panel" aria-labelledby="hero-map-title">
         <div class="hero-map-head">

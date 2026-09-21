@@ -215,9 +215,17 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   }
 
   function renderAccountButton() {
-    const b = $('#accountBtn'); if (!b) return;
-    if (session) { b.textContent = profile?.display_name ? `👤 ${profile.display_name.slice(0, 18)}` : '👤 Mon profil'; b.classList.add('connected'); }
-    else { b.textContent = 'Compte'; b.classList.remove('connected'); }
+    const b = $('#accountBtn');
+    if (b) {
+      if (session) { b.textContent = profile?.display_name ? `👤 ${profile.display_name.slice(0, 18)}` : '👤 Mon profil'; b.classList.add('connected'); }
+      else { b.textContent = 'Compte'; b.classList.remove('connected'); }
+    }
+    ['#headerAddBtn', '#heroAddEvent'].forEach(sel => {
+      const btn = $(sel);
+      if (!btn) return;
+      btn.hidden = !session;
+      btn.setAttribute('aria-hidden', session ? 'false' : 'true');
+    });
   }
 
   async function loadProfile() {
@@ -516,7 +524,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       if (up.error) { notify(up.error.message); return; }
       image_url = supabase.storage.from('event-images').getPublicUrl(path).data.publicUrl;
     }
-    const payload = { title, category, subtype, start_date: start, end_date: end, place, city, region, description: desc, official_url: url || null };
+    const payload = { title, category, subtype, start_date: start, end_date: end, starts_at: `${start}T00:00:00+02:00`, place, city, region, description: desc, official_url: url || null };
     if (image_url) payload.image_url = image_url;
     let result;
     if (editingEventId) {
@@ -650,8 +658,12 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     });
 
     $('#accountBtn')?.addEventListener('click', openProfile);
+    $('#headerAddBtn')?.addEventListener('click', () => openAddForAuthenticated());
+    $('#heroAddEvent')?.addEventListener('click', () => openAddForAuthenticated());
     document.querySelectorAll('[data-open-add]').forEach(b => b.addEventListener('click', ev => {
-      if (!session) { ev.preventDefault(); setTimeout(() => { if ($('#dlg')?.open) $('#dlg').close(); accountDialog.showModal(); }, 0); }
+      ev.preventDefault();
+      if (!session) { accountDialog.showModal(); return; }
+      openAddForAuthenticated();
     }));
     $('#addForm')?.addEventListener('submit', submitEvent);
     const fRegion = $('#f-region');

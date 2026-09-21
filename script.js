@@ -178,7 +178,7 @@
       maxZoom: 12
     }).setView([46.55, 2.45], 5.5);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(eventsMap);
@@ -216,7 +216,7 @@
       const marker = L.marker(position.coords, {
         icon: L.divIcon({
           className: 'motor-map-marker',
-          html: `<span style="--marker-color:${color}"></span>`,
+          html: `<span class="motor-map-pin cat-${e.cat || 'auto'}"></span>`,
           iconSize: [28, 36],
           iconAnchor: [14, 34],
           popupAnchor: [0, -30]
