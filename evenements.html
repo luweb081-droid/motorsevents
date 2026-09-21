@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tous les événements – Motor's Events</title>
+<meta name="description" content="Découvrez tous les événements auto, moto, quad, truck, nautisme et aviation sur Motor's Events.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co data: blob:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests">
+<meta name="permissions-policy" content="geolocation=(self), camera=(), microphone=(), payment=()">
+<!--
+  Polices : chargées depuis Google Fonts pour la maquette.
+  En production, les héberger sur le site (RGPD : pas de requête vers des serveurs tiers).
+  Les en-têtes de sécurité (CSP, HSTS, etc.) seront configurés côté serveur, pas dans le HTML.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:ital,wght@1,700;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body class="events-page">
+
+<a class="skip" href="#results">Aller aux événements</a>
+
+<!-- Icônes -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-auto" viewBox="0 0 48 48"><path d="M4 30v-5l5-2 5-8h20l6 8h4v7z"/><path d="M24 15v8"/><circle class="w" cx="13" cy="31" r="4.5"/><circle class="w" cx="35" cy="31" r="4.5"/></symbol>
+  <symbol id="i-moto" viewBox="0 0 48 48"><circle cx="11" cy="32" r="6"/><circle cx="37" cy="32" r="6"/><path d="M11 32l8-12h8l5-4h4M37 32l-5-16M19 20l-3-6h-4M19 32l8-7"/></symbol>
+  <symbol id="i-quad" viewBox="0 0 48 48"><path d="M10 30h28M15 30l3-10h12l3 10M18 20l-3-5h-5M30 20l3-5h5"/><circle class="w" cx="10" cy="33" r="5"/><circle class="w" cx="38" cy="33" r="5"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 48 48"><path d="M4 12h26v20H4zM30 19h8l6 7v6H30"/><circle class="w" cx="13" cy="33" r="4.5"/><circle class="w" cx="36" cy="33" r="4.5"/></symbol>
+  <symbol id="i-nautisme" viewBox="0 0 48 48"><path d="M5 30h38l-6 8H12z"/><path d="M24 7v21M24 9l12 17H24zM22 13L11 26h11z"/><path d="M4 43q5-3 10 0t10 0 10 0 10 0"/></symbol>
+  <symbol id="i-aviation" viewBox="0 0 48 48"><path d="M24 5l3.5 14L44 28v4l-16.5-4v9l5 4v3L24 41l-8.5 3v-3l5-4v-9L4 32v-4l16.5-9z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 48 48"><path d="M24 44s14-12 14-24a14 14 0 0 0-28 0c0 12 14 24 14 24z"/><circle cx="24" cy="20" r="5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 48 48"><circle cx="21" cy="21" r="12"/><path d="M30 30l12 12"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 48 48"><path d="M18 10l14 14-14 14"/></symbol>
+</svg>
+
+<header class="site-header on-dark">
+  <div class="wrap bar">
+    <a class="brand" href="./index.html" aria-label="Motor's Events, accueil">
+      <svg width="34" height="28" viewBox="0 0 34 28" aria-hidden="true"><polygon points="9,0 34,0 25,28 0,28" fill="#FF5B14"/><polygon points="15,7 28,7 24,21 11,21" fill="#0A1A3B"/></svg>
+      Motor's Events
+    </a>
+    <nav class="main-nav" aria-label="Navigation principale">
+      <ul>
+        <li><a href="./index.html#categories">Catégories</a></li>
+        <li><a href="./evenements.html" aria-current="page">Événements</a></li>
+        <li><a href="./index.html#featured">À la une</a></li>
+        <li><a href="./index.html#regions">Régions</a></li>
+        <li><a href="./index.html#community">Communauté</a></li>
+        <li><a href="./index.html#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <div class="actions">
+      <button class="login" id="favoritesBtn" type="button" hidden>♡ Favoris <span id="favCount">0</span></button>
+      <button class="login" id="alertsBtn" type="button" hidden>🔔 Alertes</button>
+      <button class="account-btn" id="accountBtn" type="button" aria-label="Se connecter">Se connecter</button>
+      <a class="btn btn-orange" id="headerAddBtn" href="./index.html#publier" hidden>Ajouter un événement</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="page-head on-dark" aria-labelledby="titre">
+    <div class="wrap">
+      <h1 id="titre">Tous les événements</h1>
+      <p class="lede">Rassemblements, rallyes, balades et salons, partout en France.</p>
+    </div>
+  </section>
+
+  <section class="finder" aria-label="Rechercher et filtrer les événements">
+    <div class="wrap">
+      <form class="finder-bar" id="filters" role="search">
+        <label class="finder-search">
+          <span class="sr-only">Rechercher un événement</span>
+          <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+          <input id="q" type="search" placeholder="Ville, rallye, balade…" autocomplete="off" enterkeyhint="search" maxlength="60">
+        </label>
+        <button class="finder-toggle" id="filtersToggle" type="button" aria-expanded="false" aria-controls="filtersPanel">
+          Filtres <span class="finder-badge" id="filtersBadge" hidden>0</span>
+        </button>
+        <div class="finder-panel" id="filtersPanel">
+          <div class="finder-field">
+            <label for="region">Région</label>
+            <select id="region"><option value="">Toutes les régions</option></select>
+          </div>
+          <div class="finder-field">
+            <label for="when">Date</label>
+            <select id="when">
+              <option value="all">Toutes les dates</option>
+              <option value="weekend">Ce week-end</option>
+              <option value="next">Le week-end prochain</option>
+              <option value="month">30 prochains jours</option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <div class="chips" id="chips" role="group" aria-label="Catégorie">
+        <button class="chip" type="button" data-cat="" aria-pressed="true">Toutes</button>
+        <button class="chip" type="button" data-cat="auto" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-auto"></use></svg>Auto</button>
+        <button class="chip" type="button" data-cat="moto" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-moto"></use></svg>Moto</button>
+        <button class="chip" type="button" data-cat="quad" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-quad"></use></svg>Quad</button>
+        <button class="chip" type="button" data-cat="truck" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-truck"></use></svg>Truck</button>
+        <button class="chip" type="button" data-cat="nautisme" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-nautisme"></use></svg>Nautisme</button>
+        <button class="chip" type="button" data-cat="aviation" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-aviation"></use></svg>Aviation</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="events" id="results" aria-label="Résultats">
+    <div class="wrap">
+      <div class="events-head">
+        <p class="results-count" id="count" role="status" aria-live="polite">Chargement…</p>
+        <button class="link-btn" type="button" id="reset" hidden>Réinitialiser les filtres</button>
+      </div>
+
+      <ul class="cards" id="cards" aria-busy="true"></ul>
+
+      <div class="empty" id="empty" hidden>
+        <p><strong>Aucun événement ne correspond à cette recherche.</strong> Essayez une autre date, une autre catégorie ou un lieu plus large.</p>
+        <button class="btn btn-line" type="button" id="resetEmpty">Réinitialiser les filtres</button>
+      </div>
+
+      <div class="empty" id="error" hidden>
+        <p><strong>Impossible de charger les événements.</strong> Vérifiez votre connexion puis réessayez.</p>
+        <button class="btn btn-line" type="button" id="retry">Réessayer</button>
+      </div>
+
+      <div class="more-wrap" id="moreWrap" hidden>
+        <button class="btn btn-line" type="button" id="more">Afficher plus d'événements</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="checker" aria-hidden="true"></div>
+<footer class="site-footer on-dark" id="contact">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="#top">Motor's Events</a>
+        <p>Le site de référencement des événements auto, moto, quad, truck, nautisme et aviation en France.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="./index.html#contact">Contact</a></li>
+        <li><a href="./index.html#contact">Mentions légales</a></li>
+        <li><a href="./index.html#contact">Conditions d'utilisation</a></li>
+        <li><a href="./index.html#contact">Politique de confidentialité</a></li>
+        <li><a href="./index.html#contact">Gestion des cookies</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<dialog id="eventDlg" class="event-dialog" aria-labelledby="eventDlgTitle">
+  <div class="event-detail" id="eventDetail"></div>
+</dialog>
+
+<script src="./supabase-config.js"></script>
+<script src="./evenements.js" defer></script>
+<script type="module" src="./account.js"></script>
+</body>
+</html>
