@@ -17,6 +17,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:ital,wght@1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css">
+
+<style id="event-date-duration-fix">
+.card-event-date { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:10px 0 4px; font-size:.9rem; font-weight:600; }
+.card-event-date-main { display:inline-flex; align-items:center; gap:6px; }
+.card-event-date-main .icon { width:16px; height:16px; flex:0 0 16px; }
+.card-event-duration { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:rgba(255,91,20,.1); color:#d94d0d; white-space:nowrap; }
+
+.event-attendance { display:flex; align-items:center; gap:8px; margin:10px 0; }
+.event-attendance-btn, .event-attendance-count { border:1px solid rgba(255,255,255,.14); background:#171717; color:inherit; border-radius:999px; padding:8px 12px; font:inherit; font-size:.86rem; cursor:pointer; transition:.2s ease; }
+.event-attendance-btn:hover:not(:disabled), .event-attendance-count:hover:not(:disabled) { transform:translateY(-1px); border-color:rgba(255,255,255,.3); }
+.event-attendance-btn.is-going { background:#ff6a00; border-color:#ff6a00; color:#fff; font-weight:700; }
+.event-attendance-btn:disabled, .event-attendance-count:disabled { opacity:.55; cursor:default; }
+.event-attendance-count { font-weight:700; }
+.event-attendance-detail .event-attendance { margin:0; }
+</style>
 </head>
 <body>
 

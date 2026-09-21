@@ -69,6 +69,23 @@
     return s;
   };
   const fmt = (iso, opts) => new Intl.DateTimeFormat('fr-FR', opts).format(new Date(iso + 'T12:00:00'));
+  const durationDays = (start, end = null) => {
+    const a = new Date(`${start}T12:00:00`);
+    const b = new Date(`${end || start}T12:00:00`);
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 1;
+    return Math.max(1, Math.round((b - a) / 86400000) + 1);
+  };
+  const durationLabel = (start, end = null) => {
+    const n = durationDays(start, end);
+    return `${n} jour${n > 1 ? 's' : ''}`;
+  };
+  const dateLabel = (start, end = null) => {
+    const a = fmt(start, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (!end || end === start) return a;
+    const b = fmt(end, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return `${a} → ${b}`;
+  };
+
   const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const plural = n => (n > 1 ? 's' : '');
   // N'affiche que les images hébergées sur Supabase Storage (https)
@@ -105,6 +122,52 @@
     $('#regionList').append(el('li', {}, b));
   });
 
+  /* Participation aux événements */
+  function attendanceWidget(e, compact = false) {
+    const wrap = el('div', { class: `event-attendance${compact ? ' compact' : ''}` });
+    const btn = el('button', { class: 'event-attendance-btn', type: 'button', disabled: 'true', text: 'J’y vais' });
+    const countBtn = el('button', { class: 'event-attendance-count', type: 'button', text: '👥 0' });
+    wrap.append(btn, countBtn);
+
+    if (e.source !== 'supabase' || !e.dbId) {
+      btn.disabled = true;
+      countBtn.disabled = true;
+      return wrap;
+    }
+
+    const load = async () => {
+      const api = window.ME_SOCIAL;
+      if (!api?.getAttendanceState) return;
+      const state = await api.getAttendanceState(e.dbId);
+      if (!state) return;
+      btn.disabled = false;
+      btn.classList.toggle('is-going', state.going);
+      btn.textContent = state.going ? '✓ J’y vais' : 'J’y vais';
+      countBtn.textContent = `👥 ${state.count}`;
+      countBtn.disabled = state.count === 0;
+      countBtn.title = state.count ? 'Voir les participants' : 'Aucun participant pour le moment';
+    };
+
+    btn.addEventListener('click', async ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const api = window.ME_SOCIAL;
+      if (!api?.toggleAttendance) return;
+      btn.disabled = true;
+      const going = await api.toggleAttendance(e.dbId, e.title);
+      await load();
+      if (going === false && !window.ME_SOCIAL) return;
+    });
+    countBtn.addEventListener('click', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      window.ME_SOCIAL?.showAttendees?.(e.dbId, e.title);
+    });
+
+    // account.js peut être chargé après script.js : on recharge dès que l’API sociale est prête.
+    window.addEventListener('motors:social-ready', load, { once: true });
+    load();
+    return wrap;
+  }
+
   /* Cartes */
   function card(e) {
     const day = fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -123,6 +186,11 @@
       el('p', { class: 'card-cat' }, icon(e.cat), `${CATS[e.cat]}, ${e.sub}`),
       el('h3', {}, link),
       el('p', { class: 'card-place' }, icon('pin'), `${e.city}, ${e.region}`),
+      el('div', { class: 'card-event-date' },
+        el('span', { class: 'card-event-date-main' }, icon('pin'), dateLabel(e.date, e.endDate)),
+        el('span', { class: 'card-event-duration', text: `⏱ ${durationLabel(e.date, e.endDate)}` })
+      ),
+      attendanceWidget(e),
       el('div', { class: 'card-foot' },
         el('span', { class: 'price', text: e.price }),
         el('span', { class: 'go' }, 'Voir l\'événement', icon('chevron'))
@@ -262,7 +330,7 @@
       img?el('div',{class:'event-detail-shade'}):null,
       el('span',{class:'featured-badge',text:CATS[e.cat]}),
       el('h2',{text:e.title}),
-      el('p',{text:`${e.city} · ${fmt(e.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`})
+      el('p',{text:`${e.city} · ${dateLabel(e.date, e.endDate)} · ${durationLabel(e.date, e.endDate)}`})
     );
     const content=el('div',{class:'event-detail-content'});
     const layout=el('div',{class:'detail-layout'});
@@ -290,12 +358,20 @@
     infoBox.append(el('h3',{text:'Informations'}));
     const meta = el('div',{class:'detail-meta'});
     meta.append(
-      el('div',{},el('strong',{text:'📅'}),el('span',{text:fmt(e.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'})})),
+      el('div',{},el('strong',{text:'📅'}),el('span',{text:dateLabel(e.date, e.endDate)})),
+      el('div',{},el('strong',{text:'⏱'}),el('span',{text:`Durée : ${durationLabel(e.date, e.endDate)}`})),
       el('div',{},el('strong',{text:'📍'}),el('span',{text:e.address || `${e.city}, ${e.region}`})),
       el('div',{},el('strong',{text:'🎟'}),el('span',{text:e.price}))
     );
     infoBox.append(meta);
     right.append(infoBox);
+    if (e.source === 'supabase' && e.dbId) {
+      const attendanceBox = el('div',{class:'detail-box event-attendance-detail'},
+        el('h3',{text:'Participation'}),
+        attendanceWidget(e)
+      );
+      right.append(attendanceBox);
+    }
     layout.append(left,right); content.append(layout); eventDetail.append(hero,content); eventDlg.showModal();
   }
   eventDlg.addEventListener('click',ev=>{if(ev.target===eventDlg)eventDlg.close()});
@@ -308,7 +384,7 @@
   }
   function renderCalendar(){
     const groups={}; ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>(groups[e.date]??=[]).push(e));
-    $('#calendarGrid').replaceChildren(...Object.entries(groups).map(([date,items])=>el('article',{class:'calendar-day'},el('div',{class:'calendar-day-head'},el('b',{text:fmt(date,{weekday:'long'})}),el('span',{text:fmt(date,{day:'numeric',month:'long',year:'numeric'})})),el('div',{class:'calendar-events'},...items.map(e=>el('button',{class:'calendar-event',type:'button'},el('strong',{text:e.title}),el('small',{text:`${e.city} · ${e.price}`})))))));
+    $('#calendarGrid').replaceChildren(...Object.entries(groups).map(([date,items])=>el('article',{class:'calendar-day'},el('div',{class:'calendar-day-head'},el('b',{text:fmt(date,{weekday:'long'})}),el('span',{text:fmt(date,{day:'numeric',month:'long',year:'numeric'})})),el('div',{class:'calendar-events'},...items.map(e=>el('button',{class:'calendar-event',type:'button'},el('strong',{text:e.title}),el('small',{text:`${e.city} · ${durationLabel(e.date, e.endDate)} · ${e.price}`})))))));
     const nodes=$('#calendarGrid').querySelectorAll('.calendar-event'); let i=0; ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>nodes[i++].addEventListener('click',()=>openEvent(e.id)));
   }
 

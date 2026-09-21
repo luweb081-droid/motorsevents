@@ -331,7 +331,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       if(pErr) throw pErr;
       const map=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
       const list=document.createElement('div'); list.className='attendees-list';
-      data.forEach(row=>{const p=map[row.user_id]||{};const name=p.display_name||p.username||'Membre';const avatar=p.avatar_url&&validUrl(p.avatar_url)?el('img',{src:p.avatar_url,alt:'',loading:'lazy'}):el('div',{class:'attendee-avatar-fallback',text:name.slice(0,2).toUpperCase()});const item=el('button',{class:'attendee-row',type:'button'},el('span',{class:'attendee-avatar'},avatar),el('span',{},el('strong',{text:name}),el('small',{text:[p.city,p.region].filter(Boolean).join(' · ')||'Membre Motor's Events'})));item.addEventListener('click',()=>openPublicProfile(row.user_id));list.append(item);});
+      data.forEach(row=>{const p=map[row.user_id]||{};const name=p.display_name||p.username||'Membre';const avatar=p.avatar_url&&validUrl(p.avatar_url)?el('img',{src:p.avatar_url,alt:'',loading:'lazy'}):el('div',{class:'attendee-avatar-fallback',text:name.slice(0,2).toUpperCase()});const item=el('button',{class:'attendee-row',type:'button'},el('span',{class:'attendee-avatar'},avatar),el('span',{},el('strong',{text:name}),el('small',{text:[p.city,p.region].filter(Boolean).join(' · ')||"Membre Motor\'s Events"})));item.addEventListener('click',()=>openPublicProfile(row.user_id));list.append(item);});
       body.append(el('p',{class:'attendees-count',text:`${data.length} participant${data.length>1?'s':''}`}),list);
     }catch(err){body.replaceChildren(el('p',{class:'me-status',text:'Impossible de charger les participants pour le moment.'}));console.error('[attendance]',err);}
   }
@@ -427,17 +427,26 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     profile = data; status.textContent = 'Profil enregistré.'; renderProfile(); renderAccountButton();
   }
 
+  function eventDuration(start, end = null) {
+    if (!start) return '';
+    const a = new Date(`${start}T12:00:00`);
+    const b = new Date(`${end || start}T12:00:00`);
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return '';
+    const days = Math.max(1, Math.round((b - a) / 86400000) + 1);
+    return `${days} jour${days > 1 ? 's' : ''}`;
+  }
+
   async function renderMyEvents() {
     const box = $('#myEvents'); if (!box || !session) return;
     box.textContent = 'Chargement…';
-    const { data, error } = await supabase.from('events').select('id,title,start_date,city,status,rejection_reason').eq('user_id', session.user.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('events').select('id,title,start_date,end_date,city,status,rejection_reason').eq('user_id', session.user.id).order('created_at', { ascending: false });
     box.replaceChildren();
     if (error) { box.textContent = error.message; return; }
     if (!data?.length) { box.textContent = 'Vous n’avez encore publié aucun événement.'; return; }
     data.forEach(e => {
       const row = document.createElement('article'); row.className = 'my-event';
       const title = document.createElement('strong'); title.textContent = e.title;
-      const meta = document.createElement('small'); meta.textContent = `${e.city || 'Lieu non renseigné'} · ${e.start_date}`;
+      const meta = document.createElement('small'); meta.textContent = `${e.city || 'Lieu non renseigné'} · ${e.start_date}${e.end_date ? ` → ${e.end_date}` : ''} · ${eventDuration(e.start_date, e.end_date)}`;
       const status = document.createElement('span'); status.className = `status status-${e.status}`; status.textContent = e.status === 'approved' ? 'Publié' : e.status === 'rejected' ? 'Refusé' : 'En attente';
       const actions = document.createElement('div'); actions.className = 'my-event-actions';
       if (e.status !== 'approved') {
@@ -652,6 +661,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     const adminButton = document.createElement('button'); adminButton.className = 'btn btn-orange admin-open'; adminButton.type = 'button'; adminButton.textContent = '🛡️ Modération'; adminButton.hidden = true; adminButton.addEventListener('click', () => { renderAdmin(); adminDialog.showModal(); });
     $('.profile-hero')?.append(adminButton);
     window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile, toggleAttendance, getAttendanceState, showAttendees };
+    window.dispatchEvent(new CustomEvent('motors:social-ready'));
 
     $('#memberSearchForm')?.addEventListener('submit', ev => {
       ev.preventDefault();
