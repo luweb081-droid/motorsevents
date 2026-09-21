@@ -5,32 +5,31 @@
   'use strict';
 
   /* ------------------------------------------------------------------
-     Réglages de la base : à adapter si la table ou les colonnes
-     s'appellent autrement. Mettre `null` pour une colonne qui n'existe pas.
+     Réglages de la base (table `events` de Supabase, comme dans account.js).
      ------------------------------------------------------------------ */
   const DB = {
     table: 'events',
     cols: {
       id: 'id',
       title: 'title',
-      cat: 'cat',
-      sub: 'sub',
+      cat: 'category',
+      sub: 'subtype',
       start: 'start_date',
       end: 'end_date',
       place: 'place',
       city: 'city',
       region: 'region',
       desc: 'description',
-      url: 'url',
+      url: 'official_url',
       image: 'image_url',
+      user: 'user_id',
     },
     // Seuls les événements validés par l'équipe sont affichés.
-    // Mettre `null` si la table n'a pas de colonne de validation.
     approved: { col: 'status', val: 'approved' },
   };
 
   const CATS = {
-    auto: 'Auto', moto: 'Moto', quad: 'Quad',
+    auto: 'Auto', moto: 'Moto', quad: 'Quad / SSV',
     truck: 'Truck', nautisme: 'Nautisme', aviation: 'Aviation',
   };
   const PAGE_SIZE_MOBILE = 6;
@@ -62,24 +61,19 @@
   /* ---------- Accès à Supabase (API REST, clé publique uniquement) ---------- */
 
   function readConfig() {
-    const cfg = window.SUPABASE_CONFIG || window.supabaseConfig || {};
-    const url =
-      window.SUPABASE_URL || cfg.url || cfg.SUPABASE_URL ||
-      (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '');
-    const key =
-      window.SUPABASE_ANON_KEY || window.SUPABASE_KEY || cfg.anonKey || cfg.key || cfg.SUPABASE_ANON_KEY ||
-      (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '');
-    if (!url || !key) {
-      throw new Error('Configuration Supabase introuvable : vérifier supabase-config.js (SUPABASE_URL et SUPABASE_ANON_KEY).');
+    const cfg = window.ME_SUPABASE_CONFIG || {};
+    if (!cfg.url || !cfg.publishableKey) {
+      throw new Error('Configuration Supabase introuvable : vérifier supabase-config.js (window.ME_SUPABASE_CONFIG).');
     }
-    return { url: String(url).replace(/\/+$/, ''), key: String(key) };
+    return { url: String(cfg.url).replace(/\/+$/, ''), key: String(cfg.publishableKey) };
   }
 
-  async function api(params, { count = false } = {}) {
+  async function api(params, { table = DB.table, count = false } = {}) {
     const { url, key } = readConfig();
-    const headers = { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' };
+    const headers = { apikey: key, Accept: 'application/json' };
+    if (!key.startsWith('sb_')) headers.Authorization = `Bearer ${key}`;   // anciennes clés JWT seulement
     if (count) headers.Prefer = 'count=exact';
-    const res = await fetch(`${url}/rest/v1/${DB.table}?${new URLSearchParams(params)}`, { headers });
+    const res = await fetch(`${url}/rest/v1/${table}?${new URLSearchParams(params)}`, { headers });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
       throw new Error(`Supabase ${res.status} : ${detail.slice(0, 300)}`);
@@ -162,10 +156,18 @@
 
   /* ---------- Données ---------- */
 
-  const safeUrl = (u, base) => {
+  const safeUrl = (u) => {
     try {
-      const x = new URL(u, base);
+      const x = new URL(String(u));
       return /^https?:$/.test(x.protocol) ? x.href : null;
+    } catch { return null; }
+  };
+  const safeImg = (u) => {
+    if (!u) return null;
+    try {
+      const x = new URL(String(u), location.href);
+      const storage = x.protocol === 'https:' && x.hostname.endsWith('.supabase.co');
+      return storage || x.origin === location.origin ? x.href : null;
     } catch { return null; }
   };
 
@@ -183,7 +185,8 @@
       region: g('region') || '',
       desc: g('desc') || '',
       url: g('url') ? safeUrl(g('url')) : null,
-      image: g('image') ? safeUrl(g('image'), location.href) : null,
+      image: g('image') ? safeImg(g('image')) : null,
+      userId: g('user') || null,
     };
   }
 
@@ -299,6 +302,19 @@
     if (ev.url) {
       actions.push(h('a', { class: 'btn btn-line', href: ev.url, target: '_blank', rel: 'noopener noreferrer', text: 'Site officiel' }));
     }
+    const social = window.ME_SOCIAL;
+    const favId = 1000000000 + Number(ev.id);                    // même identifiant que sur l'accueil (account.js)
+    if (social?.toggleFavorite && Number.isFinite(favId)) {
+      const fav = h('button', { class: 'btn btn-line', type: 'button' });
+      const paint = () => {
+        const on = Boolean(social.isFavorite?.(favId));
+        fav.textContent = on ? '♥ Retirer des favoris' : '♡ Ajouter aux favoris';
+        fav.classList.toggle('favorite-active', on);
+      };
+      fav.addEventListener('click', async () => { await social.toggleFavorite({ id: favId, dbId: ev.id, source: 'supabase' }); paint(); });
+      paint();
+      actions.unshift(fav);
+    }
     if (navigator.share) {
       actions.push(h('button', {
         class: 'btn btn-line', type: 'button', text: 'Partager',
@@ -319,6 +335,12 @@
               h('h3', { text: 'Affiche' }),
               h('img', { class: 'detail-poster', src: ev.image, alt: `Affiche : ${ev.title}`, loading: 'lazy' }))),
           h('div', { class: 'detail-side' },
+            ev.userId && h('div', { class: 'detail-box' },
+              h('h3', { text: 'Organisateur' }),
+              h('button', {
+                class: 'organizer-link', type: 'button',
+                onclick: () => social?.openPublicProfile?.(ev.userId),
+              }, h('div', { class: 'organizer-avatar', text: 'ME' }), h('strong', { class: 'organizer-name', text: 'Organisateur' }))),
             h('div', { class: 'detail-box' },
               h('h3', { text: 'Infos pratiques' }),
               h('div', { class: 'detail-meta' },
@@ -328,6 +350,25 @@
                 ev.sub && metaRow('Type', ev.sub)),
               actions.length > 0 && h('div', { class: 'detail-actions' }, actions))))),
     ];
+  }
+
+  // Nom et photo de l'organisateur, chargés après l'ouverture de la fiche
+  async function fillOrganizer(ev) {
+    const name = el.detail.querySelector('.organizer-name');
+    if (!name || !ev.userId) return;
+    try {
+      const { rows } = await api(
+        { select: 'id,display_name,username,avatar_url', id: `eq.${ev.userId}`, limit: '1' },
+        { table: 'profiles' });
+      const p = rows[0];
+      if (!p || !name.isConnected) return;                        // fiche déjà fermée ou remplacée
+      const label = p.display_name || p.username || 'Organisateur';
+      name.textContent = label;
+      const avatar = name.parentElement.querySelector('.organizer-avatar');
+      const img = safeImg(p.avatar_url);
+      if (img) avatar.replaceWith(h('img', { class: 'organizer-avatar-img', src: img, alt: '', loading: 'lazy' }));
+      else avatar.textContent = label.slice(0, 2).toUpperCase();
+    } catch (err) { console.error('[événements] organisateur', err); }
   }
 
   async function openEvent(id, { fetchIfMissing = false } = {}) {
@@ -344,6 +385,7 @@
     el.detail.replaceChildren(...detail(ev));
     if (!el.dlg.open) el.dlg.showModal();
     syncUrl(`#e-${ev.id}`);
+    fillOrganizer(ev);
   }
 
   /* ---------- Rendu de la liste ---------- */

@@ -228,7 +228,10 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   }
 
   async function loadApprovedEvents() {
-    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,user_id,status').eq('status', 'approved').order('start_date', { ascending: true }).limit(200);
+    // Seulement les événements à venir : sinon les 200 premiers seraient bientôt tous passés
+    const t = new Date();
+    const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,user_id,status').eq('status', 'approved').or(`end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`).order('start_date', { ascending: true }).limit(200);
     if (error) { console.warn('Impossible de charger les événements Supabase:', error.message); return; }
     const rows = data || [];
     const ids = [...new Set(rows.map(e => e.user_id).filter(Boolean))];

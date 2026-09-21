@@ -1009,7 +1009,7 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
   .tile-icon .icon { width: 1.55rem; height: 1.55rem; }
   .tile-desc { font-size: .82rem; }
 
-  /* Événements de l'accueil : 4 cartes maximum (voir la fin du fichier) */
+  /* Événements : cartes compactes (voir la fin du fichier) */
   .events { padding-block: 2.5rem 3rem; }
   .events-head { align-items: flex-start; gap: .55rem; margin-bottom: 1rem; }
   .events-head .title { font-size: 2.1rem; }
@@ -1049,13 +1049,9 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
 }
 
 /* =========================================================
-   ACCUEIL — nombre d'événements affichés
-   Le reste de la liste se trouve sur la page « Événements ».
+   ACCUEIL — lien vers la liste complète
+   (l'accueil n'affiche qu'un aperçu : voir script.js)
    ========================================================= */
-body:not(.events-page) .events .cards > :nth-child(n+7) { display: none; }
-@media (max-width: 600px) {
-  body:not(.events-page) .events .cards > :nth-child(n+5) { display: none; }
-}
 .all-events-link {
   display: flex; align-items: center; justify-content: center; gap: .5rem;
   width: fit-content; margin: 1.75rem auto 0; padding: .9rem 1.4rem;
@@ -1264,7 +1260,8 @@ body:has(dialog[open]) { overflow: hidden; }
   }
   .card-place { font-size: .85rem; }
   .card-foot { padding-top: .5rem; font-size: .9rem; }
-  .card .go { margin-left: auto; }
+  .card .go { margin-left: auto; white-space: nowrap; }
+  article.card .card-foot .price { display: none; }   /* accueil : « Voir organisateur » n'apporte rien sur petit écran */
 
   .more-wrap .btn { width: 100%; min-width: 0; }
   .event-detail-hero { min-height: 170px; padding: 3.75rem 1.1rem 1.1rem; }

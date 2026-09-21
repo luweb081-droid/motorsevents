@@ -1,7 +1,7 @@
 'use strict';
 
-/* Motor's Events – maquette
-   Données fictives. Aucun contenu n'est injecté via innerHTML :
+/* Motor's Events – accueil
+   Les événements viennent de la base Supabase (chargés par account.js). Aucun contenu n'est injecté via innerHTML :
    tout passe par textContent / createElement (bonne habitude contre le XSS). */
 (() => {
   const CATS = {
@@ -39,33 +39,10 @@
   };
   const REGIONS = ['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire', 'Corse', 'Grand Est', 'Hauts-de-France', 'Île-de-France', 'Normandie', 'Nouvelle-Aquitaine', 'Occitanie', 'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur', 'Guadeloupe', 'Guyane', 'La Réunion', 'Martinique', 'Mayotte'];
 
-  const EVENTS = [
-    { id: 1,  title: 'Balade moto des vignobles',         cat: 'moto',     sub: 'Sortie/Balade',        city: 'Bordeaux',         region: 'Nouvelle-Aquitaine',           date: '2026-09-26', price: 'Gratuit', organizer:'Moto Club Gironde', verified:true, description:'Une grande balade conviviale à travers les vignobles avec pause et exposition des motos.', address:'Place des Quinconces, Bordeaux', url:'https://example.com' },
-    { id: 2,  title: 'Rassemblement youngtimers',         cat: 'auto',     sub: 'Salons et rencontres', city: 'Toulouse',         region: 'Occitanie',                    date: '2026-09-26', price: '3 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 3,  title: 'Course de côte de la vallée',       cat: 'auto',     sub: 'Course de côtes',      city: 'Grenoble',         region: 'Auvergne-Rhône-Alpes',         date: '2026-09-27', price: 'Gratuit', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 4,  title: 'Meeting aérien de fin de saison',   cat: 'aviation', sub: 'Show aérien',          city: 'Tours',            region: 'Centre-Val de Loire',          date: '2026-09-27', price: '8 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 5,  title: 'Motocross open',                    cat: 'moto',     sub: 'Motocross',            city: 'Béthune',          region: 'Hauts-de-France',              date: '2026-09-26', price: '10 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 6,  title: 'Randonnée quad en forêt',           cat: 'quad',     sub: 'Rando quad',           city: 'Épinal',           region: 'Grand Est',                    date: '2026-09-27', price: '25 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 7,  title: 'Trial truck',                       cat: 'truck',    sub: 'Trial Truck',          city: 'Dijon',            region: 'Bourgogne-Franche-Comté',      date: '2026-09-26', price: '5 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 8,  title: 'Régates de bateaux moteurs',        cat: 'nautisme', sub: 'Offshore',             city: 'La Rochelle',      region: 'Nouvelle-Aquitaine',           date: '2026-09-27', price: 'Gratuit', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 9,  title: 'Sortie 4x4 dans les volcans',       cat: 'auto',     sub: '4X4',                  city: 'Clermont-Ferrand', region: 'Auvergne-Rhône-Alpes',         date: '2026-09-27', price: '40 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 10, title: 'Salon du nautisme d\'automne',      cat: 'nautisme', sub: 'Salons et rencontres', city: 'Vannes',           region: 'Bretagne',                     date: '2026-09-26', price: '6 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 11, title: 'Journée de roulage sur circuit',    cat: 'auto',     sub: 'Track day/Roulage',    city: 'Magny-Cours',      region: 'Bourgogne-Franche-Comté',      date: '2026-10-03', price: '150 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 12, title: 'Vente aux enchères de youngtimers', cat: 'auto',     sub: 'Vente aux enchères',   city: 'Paris',            region: 'Île-de-France',                date: '2026-10-03', price: 'Gratuit', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 13, title: 'Bourse d\'échange moto',            cat: 'moto',     sub: 'Salons et rencontres', city: 'Lyon',             region: 'Auvergne-Rhône-Alpes',         date: '2026-10-04', price: '4 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 14, title: 'Show de stunt',                     cat: 'moto',     sub: 'Stunt',                city: 'Aix-en-Provence',  region: 'Provence-Alpes-Côte d\'Azur',  date: '2026-10-04', price: '12 €', organizer:'Association Motor’s Events', verified:true, description:'Événement automobile et mécanique ouvert aux passionnés et au public.', address:'Lieu communiqué par l’organisateur', url:'https://example.com' },
-    { id: 15, title: 'Camion cross',                      cat: 'truck',    sub: 'Camion cross',         city: 'Strasbourg',       region: 'Grand Est',                    date: '2026-10-04', price: '8 €' }
-  ];
-
-  // Les événements de démo suivent le week-end en cours (sinon ils deviennent « passés »)
-  EVENTS.forEach(e => {
-    const diff = Math.round((new Date(e.date + 'T12:00:00') - new Date('2026-09-26T12:00:00')) / 864e5);
-    e.date = isoDate(addDays(SAT, diff));
-  });
-
-  // Les événements de démonstration restent disponibles, puis les événements
-  // approuvés de Supabase sont ajoutés/remplacés à leur arrivée.
-  let ALL_EVENTS = [...EVENTS];
+  // Aucun événement n'est écrit dans ce fichier : account.js charge les événements validés
+  // depuis Supabase et les envoie ici via l'événement « motors:supabase-events ».
+  let ALL_EVENTS = [];
+  let loaded = false;
 
   const DEFAULT = { cat: 'all', what: '', where: '', when: 'all' };
   const state = { ...DEFAULT };
@@ -99,16 +76,15 @@
 
   const whatEl = $('#what'), whereEl = $('#where'), whenEl = $('#when');
   const tilesEl = $('#tiles'), cardsEl = $('#cards'), emptyEl = $('#empty');
-  const countEl = $('#count'), resetTop = $('#resetTop');
+  const countEl = $('#count'), resetTop = $('#resetTop'), allLink = $('.all-events-link');
 
   /* Catégories */
   Object.entries(CATS).forEach(([key, label]) => {
-    const n = EVENTS.filter(e => e.cat === key).length;
     const b = el('button', { class: 'tile', type: 'button', 'aria-pressed': 'false', 'data-cat': key },
       el('span', { class: 'tile-icon' }, icon(key)),
       el('span', { class: 'tile-name', text: label }),
       el('span', { class: 'tile-desc', text: CAT_DESC[key] }),
-      el('span', { class: 'tile-count', text: `${n} événement${plural(n)}` })
+      el('span', { class: 'tile-count', text: '' })
     );
     b.addEventListener('click', () => {
       state.cat = state.cat === key ? 'all' : key;
@@ -166,12 +142,25 @@
         && (!where || norm(`${e.city} ${e.region}`).includes(where)))
       .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title, 'fr'));
 
-    cardsEl.replaceChildren(...items.map(card));
-    emptyEl.hidden = items.length > 0;
-
+    // L'accueil n'affiche qu'un aperçu : la liste complète est sur la page « Événements »
     const n = items.length;
+    const limit = matchMedia('(max-width: 600px)').matches ? 4 : 6;
+    cardsEl.replaceChildren(...items.slice(0, limit).map(card));
+    emptyEl.hidden = !loaded || n > 0;
+
     const cat = state.cat === 'all' ? '' : ` (${CATS[state.cat]})`;
-    countEl.textContent = n === 0 ? 'Aucun événement' : `${n} événement${plural(n)} ${w.label}${cat}`;
+    countEl.textContent = !loaded ? 'Chargement des événements…'
+      : n === 0 ? 'Aucun événement' : `${n} événement${plural(n)} ${w.label}${cat}`;
+
+    // Le lien « Voir tous les événements » garde les filtres choisis
+    if (allLink) {
+      const p = new URLSearchParams();
+      if (state.cat !== 'all') p.set('cat', state.cat);
+      const q = state.what.trim() || state.where.trim();
+      if (q) p.set('q', q);
+      if (state.when !== 'all') p.set('when', state.when);
+      allLink.href = './evenements.html' + (p.toString() ? `?${p}` : '');
+    }
 
     tilesEl.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.cat === state.cat)));
     whatEl.value = state.what;
@@ -366,14 +355,17 @@
 
   window.addEventListener('motors:supabase-events', ev => {
     const incoming = Array.isArray(ev.detail) ? ev.detail : [];
-    const demo = EVENTS.filter(e => e.source !== 'supabase');
-    ALL_EVENTS = [...demo, ...incoming];
+    loaded = true;
+    ALL_EVENTS = incoming;
     tilesEl.querySelectorAll('.tile').forEach(t => { const n = ALL_EVENTS.filter(e => e.cat === t.dataset.cat).length; t.querySelector('.tile-count').textContent = `${n} événement${plural(n)}`; });
     renderFeatured();
     renderCalendar();
     updateFavCount();
     render();
   });
+
+  // Si la base ne répond pas, on arrête d'afficher « Chargement… ».
+  setTimeout(() => { if (!loaded) { loaded = true; render(); } }, 8000);
 
   render();
 })();
