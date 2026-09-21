@@ -63,7 +63,7 @@
 <main id="top">
   <section class="hero on-dark" aria-labelledby="titre">
   <div class="hero-car" aria-hidden="true">
-  <img src="aa.jpg" alt="" loading="eager">
+  <img src="hero-car.webp" alt="" width="1186" height="774" fetchpriority="high">
 </div>
 
   <div class="wrap hero-content">
@@ -99,6 +99,7 @@
           <select id="when">
             <option value="weekend">Ce week-end</option>
             <option value="next">Le week-end prochain</option>
+            <option value="month">30 prochains jours</option>
             <option value="all">Toutes les dates</option>
           </select>
         </div>
@@ -331,6 +332,7 @@
           <label for="f-img">Affiche (facultatif)</label>
           <input id="f-img" name="img" type="file" accept="image/jpeg,image/png,image/webp">
           <p class="hint">JPG, PNG ou WebP, 5 Mo maximum.</p>
+          <img id="f-img-preview" class="img-preview" alt="Aperçu de l'affiche" hidden>
         </div>
         <div class="full">
           <label class="check"><input type="checkbox" name="ok" required> <span>Je suis l'organisateur de cet événement ou j'ai son accord pour le publier.</span></label>

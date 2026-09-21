@@ -921,3 +921,27 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
 
 
 }
+
+/* =========================================================
+   IMAGES DES ÉVÉNEMENTS (cartes, à la une, fiche détaillée)
+   ========================================================= */
+.cover.has-img { background: var(--navy); }
+.cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cover.has-img::before { z-index: 1; background: linear-gradient(to bottom, rgb(10 26 59 / .45), transparent 50%); }
+.cover.has-img .date { z-index: 2; }
+
+.featured-item:has(.featured-item-image)::after { display: none; }
+.featured-item-plain { position: relative; z-index: 1; height: 100%; min-height: 330px; padding: 1.4rem; display: flex; flex-direction: column; justify-content: flex-end; }
+.featured-item-plain h3 { margin: 1rem 0 .45rem; }
+
+.event-detail-hero.has-img::after { display: none; }
+.event-detail-hero.has-img > .event-detail-img { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; }
+.event-detail-hero.has-img > .event-detail-shade { position: absolute; inset: 0; z-index: 0; background: linear-gradient(to top, rgb(5 12 27 / .92), rgb(5 12 27 / .25) 70%); }
+.detail-poster { display: block; width: 100%; max-height: 520px; object-fit: contain; border-radius: 8px; background: #fff; }
+
+.img-preview { display: block; max-width: 100%; max-height: 180px; margin-top: .6rem; border-radius: 8px; border: 1px solid var(--line); object-fit: cover; }
+
+/* Le bouton « Compte » restait masqué sur mobile : impossible de se connecter */
+@media (max-width: 820px) {
+  .account-btn { display: inline-flex; padding: .55rem .85rem; font-size: 13px; }
+}

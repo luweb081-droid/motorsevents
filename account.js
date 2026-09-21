@@ -239,7 +239,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     }
     const mapped = rows.map(e => ({
       id: 1000000000 + Number(e.id), dbId: e.id, title: e.title, cat: e.category, sub: e.subtype,
-      city: e.city, region: e.region, date: e.start_date, price: 'Voir organisateur',
+      city: e.city, region: e.region, date: e.start_date, endDate: e.end_date || '', price: 'Voir organisateur',
       organizer: profiles[e.user_id]?.display_name || profiles[e.user_id]?.username || 'Organisateur',
       verified: false, description: e.description, address: e.place, url: e.official_url || '', image_url: e.image_url || '', source: 'supabase'
     }));
@@ -373,7 +373,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
     }
     const payload = { id: session.user.id, display_name, username, city: safeText($('#p-city').value, 120), region: safeText($('#p-region').value, 120), bio: safeText($('#p-bio').value, 500), website, avatar_url };
-    const { data, error } = await supabase.from('profiles').upsert(payload).select().single();
+    const { data, error } = await supabase.from('profiles').update((({ id, ...rest }) => rest)(payload)).eq('id', session.user.id).select().single();
     if (error) { status.textContent = error.message.includes('profiles_username_key') ? 'Ce pseudo est déjà utilisé.' : error.message; return; }
     profile = data; status.textContent = 'Profil enregistré.'; renderProfile(); renderAccountButton();
   }
@@ -467,7 +467,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       result = await supabase.from('events').insert({ ...payload, user_id: session.user.id, status: 'pending' });
     }
     if (result.error) { notify(result.error.message); return; }
-    editingEventId = null; $('#dlg').close(); ev.currentTarget.reset();
+    editingEventId = null; $('#dlg').close(); $('#addForm').reset();
     notify('Événement envoyé pour validation.', true); await refresh();
   }
 

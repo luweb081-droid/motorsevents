@@ -40,13 +40,12 @@ function formatDate(value) {
 
   if (!value) return 'Date inconnue';
 
-  const date = new Date(value);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
 
   return new Intl.DateTimeFormat(
     'fr-FR',
     {
-      dateStyle: 'medium',
-      timeStyle: 'short'
+      dateStyle: 'long'
     }
   ).format(date);
 }
@@ -103,7 +102,7 @@ async function checkAdmin() {
     .single();
 
 
-  if (error || !data || data.role !== 'admin') {
+  if (error || !data || !['admin', 'moderator'].includes(data.role)) {
 
     blockAccess();
 
@@ -197,8 +196,6 @@ async function loadPendingEvents() {
       title,
       category,
       subtype,
-      starts_at,
-      ends_at,
       start_date,
       end_date,
       place,
@@ -270,9 +267,7 @@ function renderEvent(event) {
     `;
 
 
-  const date =
-    event.starts_at ||
-    event.start_date;
+  const date = event.start_date;
 
 
   return `
@@ -381,12 +376,7 @@ async function approveEvent(eventId) {
 
   const {
     error
-  } = await supabase.rpc(
-    'approve_event',
-    {
-      event_id: Number(eventId)
-    }
-  );
+  } = await supabase.from('events').update({ status: 'approved', rejection_reason: null }).eq('id', Number(eventId));
 
 
   if (error) {
@@ -444,13 +434,7 @@ async function rejectEvent() {
 
   const {
     error
-  } = await supabase.rpc(
-    'reject_event',
-    {
-      event_id: rejectingEventId,
-      reason
-    }
-  );
+  } = await supabase.from('events').update({ status: 'rejected', rejection_reason: reason }).eq('id', rejectingEventId);
 
 
   if (error) {

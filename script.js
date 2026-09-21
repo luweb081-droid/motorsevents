@@ -24,10 +24,18 @@
     nautisme: ['Inshore', 'Offshore', 'Plaisance', 'Salons et rencontres', 'Sortie/Balade'],
     aviation: ['Rallye', 'Salons et rencontres', 'Show aérien', 'Stage/Baptême', 'Voltige']
   };
+  // Dates calculées automatiquement (plus de dates codées en dur)
+  const pad = n => String(n).padStart(2, '0');
+  const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const NOW = new Date(); NOW.setHours(12, 0, 0, 0);
+  const SAT = addDays(NOW, NOW.getDay() === 0 ? -1 : 6 - NOW.getDay());
+  const dayMonth = d => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(d);
   const WHEN = {
-    weekend: { from: '2026-09-26', to: '2026-09-27', label: 'ce week-end (26 et 27 septembre)' },
-    next:    { from: '2026-10-03', to: '2026-10-04', label: 'le week-end prochain (3 et 4 octobre)' },
-    all:     { from: '0000-00-00', to: '9999-99-99', label: 'à venir' }
+    weekend: { from: isoDate(SAT), to: isoDate(addDays(SAT, 1)), label: `ce week-end (${dayMonth(SAT)})` },
+    next:    { from: isoDate(addDays(SAT, 7)), to: isoDate(addDays(SAT, 8)), label: 'le week-end prochain' },
+    month:   { from: isoDate(NOW), to: isoDate(addDays(NOW, 30)), label: 'dans les 30 prochains jours' },
+    all:     { from: isoDate(NOW), to: '9999-99-99', label: 'à venir' }
   };
   const REGIONS = ['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire', 'Corse', 'Grand Est', 'Hauts-de-France', 'Île-de-France', 'Normandie', 'Nouvelle-Aquitaine', 'Occitanie', 'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur', 'Guadeloupe', 'Guyane', 'La Réunion', 'Martinique', 'Mayotte'];
 
@@ -49,11 +57,17 @@
     { id: 15, title: 'Camion cross',                      cat: 'truck',    sub: 'Camion cross',         city: 'Strasbourg',       region: 'Grand Est',                    date: '2026-10-04', price: '8 €' }
   ];
 
+  // Les événements de démo suivent le week-end en cours (sinon ils deviennent « passés »)
+  EVENTS.forEach(e => {
+    const diff = Math.round((new Date(e.date + 'T12:00:00') - new Date('2026-09-26T12:00:00')) / 864e5);
+    e.date = isoDate(addDays(SAT, diff));
+  });
+
   // Les événements de démonstration restent disponibles, puis les événements
   // approuvés de Supabase sont ajoutés/remplacés à leur arrivée.
   let ALL_EVENTS = [...EVENTS];
 
-  const DEFAULT = { cat: 'all', what: '', where: '', when: 'weekend' };
+  const DEFAULT = { cat: 'all', what: '', where: '', when: 'all' };
   const state = { ...DEFAULT };
 
   const NS = 'http://www.w3.org/2000/svg';
@@ -65,7 +79,7 @@
       else if (k === 'text') n.textContent = v;
       else n.setAttribute(k, v);
     }
-    kids.forEach(k => n.append(k));
+    kids.flat().forEach(k => { if (k != null) n.append(k); });
     return n;
   };
   const icon = (id, cls = 'icon') => {
@@ -80,6 +94,8 @@
   const fmt = (iso, opts) => new Intl.DateTimeFormat('fr-FR', opts).format(new Date(iso + 'T12:00:00'));
   const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const plural = n => (n > 1 ? 's' : '');
+  // N'affiche que les images hébergées sur Supabase Storage (https)
+  const safeImg = v => { try { const u = new URL(String(v || '')); return u.protocol === 'https:' && u.hostname.endsWith('.supabase.co') ? u.href : null; } catch (_) { return null; } };
 
   const whatEl = $('#what'), whereEl = $('#where'), whenEl = $('#when');
   const tilesEl = $('#tiles'), cardsEl = $('#cards'), emptyEl = $('#empty');
@@ -118,8 +134,9 @@
     const day = fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long' });
     const link = el('a', { href: '#', text: e.title, 'aria-label': `${e.title}, ${e.city}, ${day}` });
     link.addEventListener('click', ev => { ev.preventDefault(); openEvent(e.id); });
-    const cover = el('div', { class: 'cover' },
-      icon(e.cat, 'icon big'),
+    const img = safeImg(e.image_url);
+    const cover = el('div', { class: `cover${img ? ' has-img' : ''}` },
+      img ? el('img', { class: 'cover-img', src: img, alt: '', loading: 'lazy' }) : icon(e.cat, 'icon big'),
       el('div', { class: 'date' },
         el('small', { text: fmt(e.date, { weekday: 'short' }) }),
         el('b', { text: fmt(e.date, { day: 'numeric' }) }),
@@ -144,7 +161,7 @@
     const where = norm(state.where.trim());
     const items = ALL_EVENTS
       .filter(e => (state.cat === 'all' || e.cat === state.cat)
-        && e.date >= w.from && e.date <= w.to
+        && (e.endDate || e.date) >= w.from && e.date <= w.to
         && (!what || norm(`${e.title} ${e.sub} ${CATS[e.cat]}`).includes(what))
         && (!where || norm(`${e.city} ${e.region}`).includes(where)))
       .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title, 'fr'));
@@ -190,14 +207,22 @@
   $('#dlgClose').addEventListener('click', () => dlg.close());
   $('#doneClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', ev => { if (ev.target === dlg) dlg.close(); });
+  // Aperçu de l'affiche choisie
+  const imgPrev = $('#f-img-preview');
+  let prevUrl = null;
+  const clearPrev = () => { if (prevUrl) URL.revokeObjectURL(prevUrl); prevUrl = null; imgPrev.hidden = true; imgPrev.removeAttribute('src'); };
+  form.addEventListener('reset', () => setTimeout(clearPrev));
   $('#f-img').addEventListener('change', () => {
+    clearPrev();
     const file = $('#f-img').files?.[0];
     if (!file) return;
     const allowed = new Set(['image/jpeg','image/png','image/webp']);
     if (!allowed.has(file.type) || file.size > 5 * 1024 * 1024) {
       $('#f-img').value = '';
       alert('Image refusée : JPG, PNG ou WebP uniquement, 5 Mo maximum.');
+      return;
     }
+    prevUrl = URL.createObjectURL(file); imgPrev.src = prevUrl; imgPrev.hidden = false;
   });
 
   // La soumission réelle est gérée par account.js après authentification Supabase.
@@ -242,7 +267,10 @@
     const e=ALL_EVENTS.find(x=>x.id===id); if(!e) return;
     const fav=isFav(id);
     eventDetail.replaceChildren();
-    const hero=el('div',{class:'event-detail-hero'},
+    const img=safeImg(e.image_url);
+    const hero=el('div',{class:`event-detail-hero${img?' has-img':''}`},
+      img?el('img',{class:'event-detail-img',src:img,alt:''}):null,
+      img?el('div',{class:'event-detail-shade'}):null,
       el('span',{class:'featured-badge',text:CATS[e.cat]}),
       el('h2',{text:e.title}),
       el('p',{text:`${e.city} · ${fmt(e.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`})
@@ -262,9 +290,7 @@
     const favBtn=left.querySelectorAll('button')[0];
     favBtn.addEventListener('click',()=>{toggleFav(id);openEvent(id);});
     shareBtn.addEventListener('click',async()=>{ const data={title:e.title,text:`${e.title} — Motor's Events`,url:location.href}; if(navigator.share){try{await navigator.share(data)}catch(_){}} else {await navigator.clipboard?.writeText(location.href); shareBtn.textContent='Lien copié';} });
-    left.append(el('div',{class:'detail-box'},
-      el('h3',{text:'Photos'}), el('div',{class:'gallery'}, el('div'),el('div'),el('div'))
-    ));
+    if(img) left.append(el('div',{class:'detail-box'},el('h3',{text:'Affiche'}),el('a',{href:img,target:'_blank',rel:'noopener noreferrer'},el('img',{class:'detail-poster',src:img,alt:`Affiche : ${e.title}`,loading:'lazy'}))));
     const right=el('aside');
     const orgAvatar=e.organizerAvatar?el('img',{src:e.organizerAvatar,alt:'',class:'organizer-avatar-img',loading:'lazy'}):el('div',{class:'organizer-avatar',text:(e.organizer||'ME').slice(0,2).toUpperCase()});
     const orgButton=el('button',{class:'organizer-link',type:'button'},orgAvatar,el('div',{},el('strong',{text:e.organizer||'Organisateur'}),e.verified?el('span',{class:'verified',text:'✓ Organisateur vérifié'}):null));
@@ -287,8 +313,8 @@
   window.addEventListener('motors:open-db-event', ev => { const id=Number(ev.detail); const e=ALL_EVENTS.find(x=>x.dbId===id); if(e) openEvent(e.id); });
 
   function renderFeatured(){
-    const top=ALL_EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
-    $('#featuredGrid').replaceChildren(...top.map(e=>el('article',{class:'featured-item',tabindex:'0'},el('span',{class:'featured-badge',text:'À LA UNE'}),el('h3',{text:e.title}),el('p',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`}))));
+    const top=ALL_EVENTS.filter(e=>(e.endDate||e.date)>=WHEN.all.from).sort((a,b)=>(!!safeImg(b.image_url))-(!!safeImg(a.image_url))||a.date.localeCompare(b.date)).slice(0,3);
+    $('#featuredGrid').replaceChildren(...top.map(e=>{const img=safeImg(e.image_url);return el('article',{class:'featured-item',tabindex:'0'},img?el('img',{class:'featured-item-image',src:img,alt:'',loading:'lazy'}):null,img?el('div',{class:'featured-item-overlay'}):null,el('div',{class:img?'featured-item-content':'featured-item-plain'},el('span',{class:'featured-badge',text:CATS[e.cat]}),el('h3',{text:e.title}),el('p',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`})));}));
     $('#featuredGrid').querySelectorAll('.featured-item').forEach((n,i)=>{n.addEventListener('click',()=>openEvent(top[i].id));n.addEventListener('keydown',ev=>{if(ev.key==='Enter')openEvent(top[i].id)})});
   }
   function renderCalendar(){
@@ -342,6 +368,7 @@
     const incoming = Array.isArray(ev.detail) ? ev.detail : [];
     const demo = EVENTS.filter(e => e.source !== 'supabase');
     ALL_EVENTS = [...demo, ...incoming];
+    tilesEl.querySelectorAll('.tile').forEach(t => { const n = ALL_EVENTS.filter(e => e.cat === t.dataset.cat).length; t.querySelector('.tile-count').textContent = `${n} événement${plural(n)}`; });
     renderFeatured();
     renderCalendar();
     updateFavCount();
