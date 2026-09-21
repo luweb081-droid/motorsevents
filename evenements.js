@@ -262,7 +262,12 @@
         where && h('p', { class: 'card-place' }, icon('pin'), h('span', { text: where })),
         h('div', { class: 'card-foot' },
           h('span', { class: 'price', text: multi ? range(F.short, ev.start, ev.end) : '' }),
-          h('span', { class: 'go' }, 'Détails', icon('chevron')))));
+          h('div', { class: 'card-actions' },
+            h('button', {
+              class: 'btn btn-line attend-btn', type: 'button', text: "J'y vais",
+              onclick: (e) => { e.preventDefault(); e.stopPropagation(); window.ME_SOCIAL?.toggleAttendance?.(ev.id, ev.title); },
+            }),
+            h('a', { class: 'go', href: `#e-${ev.id}`, 'data-id': ev.id }, 'Détails', icon('chevron'))))));
   }
 
   function skeletons(n) {
@@ -303,6 +308,22 @@
       actions.push(h('a', { class: 'btn btn-line', href: ev.url, target: '_blank', rel: 'noopener noreferrer', text: 'Site officiel' }));
     }
     const social = window.ME_SOCIAL;
+    if (social?.toggleAttendance) {
+      const attend = h('button', { class: 'btn btn-orange attend-btn', type: 'button', text: "J'y vais" });
+      const attendees = h('button', { class: 'btn btn-line attendees-btn', type: 'button', text: 'Voir qui y va' });
+      const refreshAttendance = async () => {
+        const info = await social.getAttendanceState?.(ev.id);
+        if (!info) return;
+        attend.textContent = info.going ? "✓ J'y vais" : "J'y vais";
+        attend.classList.toggle('attendance-active', info.going);
+        attendees.textContent = info.count ? `Voir qui y va · ${info.count}` : 'Voir qui y va';
+      };
+      attend.addEventListener('click', async () => { await social.toggleAttendance(ev.id, ev.title); await refreshAttendance(); });
+      attendees.addEventListener('click', () => social.showAttendees?.(ev.id, ev.title));
+      actions.unshift(attendees);
+      actions.unshift(attend);
+      refreshAttendance();
+    }
     const favId = 1000000000 + Number(ev.id);                    // même identifiant que sur l'accueil (account.js)
     if (social?.toggleFavorite && Number.isFinite(favId)) {
       const fav = h('button', { class: 'btn btn-line', type: 'button' });

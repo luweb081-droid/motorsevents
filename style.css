@@ -1268,3 +1268,18 @@ body:has(dialog[open]) { overflow: hidden; }
   .event-detail-content { padding: 1rem; }
   .detail-actions .btn { width: 100%; }
 }
+/* Participation aux événements */
+.card-actions{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin-left:auto}
+.attend-btn,.attendees-btn{padding:.62rem .85rem;font-size:.9rem}
+.attendance-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}
+.card-foot .go{display:inline-flex;align-items:center;gap:.25rem}
+.attendees-list{display:grid;gap:.6rem;margin-top:1rem}
+.attendee-row{display:flex;align-items:center;gap:.8rem;width:100%;padding:.7rem;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left;cursor:pointer}
+.attendee-row:hover{border-color:var(--navy)}
+.attendee-row>span:nth-child(2){display:grid;gap:.1rem}
+.attendee-row small{color:var(--muted)}
+.attendee-avatar,.attendee-avatar img,.attendee-avatar-fallback{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;overflow:hidden;flex:none}
+.attendee-avatar img{object-fit:cover}
+.attendee-avatar-fallback{background:var(--navy);color:var(--orange);font-weight:700}
+.attendees-count{font-weight:600;color:var(--muted)}
+@media (max-width:600px){.card-actions{width:100%;margin-left:0}.card-actions .btn{flex:1}.card-foot{align-items:flex-start}}

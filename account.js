@@ -290,6 +290,52 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   function isFavoriteLocal(id){try{const a=JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]');return Array.isArray(a)&&a.includes(id);}catch(_){return false;}}
   function setFavoriteLocal(id,on){try{const a=Array.isArray(JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]'))?JSON.parse(localStorage.getItem('motors-events-favorites-v1')||'[]'):[];const next=on?[...new Set([...a,id])]:a.filter(x=>x!==id);localStorage.setItem('motors-events-favorites-v1',JSON.stringify(next));window.dispatchEvent(new CustomEvent('motors:favorites-changed'));}catch(_){}}
 
+
+  async function attendanceState(eventId){
+    if(!supabase) return {going:false,count:0};
+    const [{data:mine}, {count}] = await Promise.all([
+      session ? supabase.from('event_attendees').select('event_id').eq('event_id',eventId).eq('user_id',session.user.id).maybeSingle() : Promise.resolve({data:null}),
+      supabase.from('event_attendees').select('user_id',{count:'exact',head:true}).eq('event_id',eventId)
+    ]);
+    return {going:Boolean(mine),count:Number(count ?? 0)};
+  }
+
+  async function getAttendanceState(eventId){
+    try{return await attendanceState(eventId);}catch(err){console.error('[attendance]',err);return null;}
+  }
+
+  async function toggleAttendance(eventId,title='cet événement'){
+    if(!session){notify('Connectez-vous pour indiquer que vous y allez.');accountDialog.showModal();return false;}
+    const current=await attendanceState(eventId);
+    const result=current.going
+      ? await supabase.from('event_attendees').delete().eq('event_id',eventId).eq('user_id',session.user.id)
+      : await supabase.from('event_attendees').insert({event_id:eventId,user_id:session.user.id});
+    if(result.error){notify(result.error.message);return current.going;}
+    notify(current.going ? `Tu n'y vas plus à « ${title} ».` : `Tu participes à « ${title} » !`,true);
+    return !current.going;
+  }
+
+  async function showAttendees(eventId,title='Événement'){
+    const old=document.getElementById('attendeesDlg');
+    if(old) old.remove();
+    const d=modalBase('attendeesDlg',`Qui va à « ${title} » ?`);
+    const body=document.createElement('div'); body.className='dlg-body';
+    body.append(el('p',{class:'me-muted',text:'Chargement des participants…'})); d.append(body); document.body.append(d); d.showModal();
+    try{
+      const {data,error}=await supabase.from('event_attendees').select('user_id,created_at').eq('event_id',eventId).order('created_at',{ascending:true});
+      if(error) throw error;
+      body.replaceChildren();
+      if(!data?.length){body.append(el('div',{class:'social-empty'},el('strong',{text:'Personne pour le moment'}),el('p',{text:'Sois le premier à indiquer que tu y vas !'})));return;}
+      const ids=[...new Set(data.map(x=>x.user_id).filter(Boolean))];
+      const {data:profiles,error:pErr}=await supabase.from('profiles').select('id,display_name,username,avatar_url,city,region').in('id',ids);
+      if(pErr) throw pErr;
+      const map=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
+      const list=document.createElement('div'); list.className='attendees-list';
+      data.forEach(row=>{const p=map[row.user_id]||{};const name=p.display_name||p.username||'Membre';const avatar=p.avatar_url&&validUrl(p.avatar_url)?el('img',{src:p.avatar_url,alt:'',loading:'lazy'}):el('div',{class:'attendee-avatar-fallback',text:name.slice(0,2).toUpperCase()});const item=el('button',{class:'attendee-row',type:'button'},el('span',{class:'attendee-avatar'},avatar),el('span',{},el('strong',{text:name}),el('small',{text:[p.city,p.region].filter(Boolean).join(' · ')||'Membre Motor's Events'})));item.addEventListener('click',()=>openPublicProfile(row.user_id));list.append(item);});
+      body.append(el('p',{class:'attendees-count',text:`${data.length} participant${data.length>1?'s':''}`}),list);
+    }catch(err){body.replaceChildren(el('p',{class:'me-status',text:'Impossible de charger les participants pour le moment.'}));console.error('[attendance]',err);}
+  }
+
   async function followUser(userId){
     if(!session){notify('Connectez-vous pour suivre un membre.');accountDialog.showModal();return false;}
     if(userId===session.user.id){notify('Vous ne pouvez pas vous suivre vous-même.');return false;}
@@ -605,7 +651,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     $('#profileDlg')?.addEventListener('close', () => { editingEventId = null; });
     const adminButton = document.createElement('button'); adminButton.className = 'btn btn-orange admin-open'; adminButton.type = 'button'; adminButton.textContent = '🛡️ Modération'; adminButton.hidden = true; adminButton.addEventListener('click', () => { renderAdmin(); adminDialog.showModal(); });
     $('.profile-hero')?.append(adminButton);
-    window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile };
+    window.ME_SOCIAL = { toggleFavorite, isFavorite: isFavoriteLocal, followUser, openPublicProfile, toggleAttendance, getAttendanceState, showAttendees };
 
     $('#memberSearchForm')?.addEventListener('submit', ev => {
       ev.preventDefault();
