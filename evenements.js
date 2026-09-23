@@ -223,52 +223,21 @@
   const catClass = (ev) => (known(ev) ? `cat-${ev.cat}` : 'cat-autre');
   const catIcon = (ev) => (known(ev) ? ev.cat : 'pin');
 
-  function dateTag(ev) {
-    if (!ev.start) return null;
-    return h('span', { class: 'date' },
-      h('small', { text: F.wd.format(ev.start) }),
-      h('b', { text: F.d.format(ev.start) }),
-      h('small', { text: F.mo.format(ev.start) }));
+  /* Cartes et fiche événement : rendu commun avec l'accueil (event-ui.js) */
+  const favId = (id) => 1000000000 + Number(id);              // même identifiant que sur l'accueil (account.js)
+
+  function toModel(ev) {
+    return {
+      id: ev.id, dbId: ev.id,
+      title: ev.title, cat: ev.cat, sub: ev.sub,
+      start: ev.start ? iso(ev.start) : '', end: ev.end ? iso(ev.end) : null,
+      city: ev.city, region: ev.region, place: ev.place,
+      desc: ev.desc, image: ev.image, url: ev.url,
+      organizer: { id: ev.userId },
+    };
   }
 
-  function card(ev) {
-    const cover = h('div', { class: 'cover' });
-    if (ev.image) {
-      cover.classList.add('has-img');
-      cover.append(h('img', {
-        class: 'cover-img', src: ev.image, alt: '', loading: 'lazy', decoding: 'async',
-        onerror: (e) => {                                   // affiche cassée : retour au visuel par défaut
-          e.target.remove();
-          cover.classList.remove('has-img');
-          cover.prepend(icon(catIcon(ev)));
-        },
-      }));
-    } else {
-      cover.append(icon(catIcon(ev)));
-    }
-    cover.append(dateTag(ev));
-
-    const where = [ev.city, ev.region].filter(Boolean).join(', ') || ev.place;
-    const multi = ev.start && ev.end && !sameDay(ev.start, ev.end);
-
-    return h('li', { class: `card ${catClass(ev)}` },
-      cover,
-      h('div', { class: 'card-body' },
-        h('span', { class: 'card-cat' },
-          icon(catIcon(ev)),
-          h('span', { text: CATS[ev.cat] || 'Événement' }),
-          ev.sub && h('span', { class: 'card-sub', text: ev.sub })),
-        h('h3', {}, h('a', { href: `#e-${ev.id}`, 'data-id': ev.id, text: ev.title })),
-        where && h('p', { class: 'card-place' }, icon('pin'), h('span', { text: where })),
-        h('div', { class: 'card-foot' },
-          h('span', { class: 'price', text: multi ? range(F.short, ev.start, ev.end) : '' }),
-          h('div', { class: 'card-actions' },
-            h('button', {
-              class: 'btn btn-line attend-btn', type: 'button', text: "J'y vais",
-              onclick: (e) => { e.preventDefault(); e.stopPropagation(); window.ME_SOCIAL?.toggleAttendance?.(ev.id, ev.title); },
-            }),
-            h('a', { class: 'go', href: `#e-${ev.id}`, 'data-id': ev.id }, 'Détails', icon('chevron'))))));
-  }
+  const cardOf = (ev) => window.ME_EVENT_UI.card(toModel(ev), { onOpen: () => openEvent(ev.id) });
 
   function skeletons(n) {
     const frag = document.createDocumentFragment();
@@ -285,111 +254,13 @@
 
   /* ---------- Fiche détaillée ---------- */
 
-  function metaRow(label, value) {
-    return h('div', {}, h('strong', { text: label }), h('span', { text: value }));
-  }
-
-  function detail(ev) {
-    const when = ev.start ? range(F.long, ev.start, ev.end) : '';
-    const where = ev.place || ev.city;
-    const area = [ev.city !== where ? ev.city : '', ev.region].filter(Boolean).join(', ');
-    const cityInPlace = ev.city && ev.place.toLowerCase().includes(ev.city.toLowerCase());
-    const mapQuery = [ev.place, cityInPlace ? '' : ev.city].filter(Boolean).join(' ');
-
-    const actions = [];
-    if (mapQuery) {
-      actions.push(h('a', {
-        class: 'btn btn-orange', target: '_blank', rel: 'noopener',
-        href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`,
-        text: 'Voir sur la carte',
-      }));
-    }
-    if (ev.url) {
-      actions.push(h('a', { class: 'btn btn-line', href: ev.url, target: '_blank', rel: 'noopener noreferrer', text: 'Site officiel' }));
-    }
-    const social = window.ME_SOCIAL;
-    if (social?.toggleAttendance) {
-      const attend = h('button', { class: 'btn btn-orange attend-btn', type: 'button', text: "J'y vais" });
-      const attendees = h('button', { class: 'btn btn-line attendees-btn', type: 'button', text: 'Voir qui y va' });
-      const refreshAttendance = async () => {
-        const info = await social.getAttendanceState?.(ev.id);
-        if (!info) return;
-        attend.textContent = info.going ? "✓ J'y vais" : "J'y vais";
-        attend.classList.toggle('attendance-active', info.going);
-        attendees.textContent = info.count ? `Voir qui y va · ${info.count}` : 'Voir qui y va';
-      };
-      attend.addEventListener('click', async () => { await social.toggleAttendance(ev.id, ev.title); await refreshAttendance(); });
-      attendees.addEventListener('click', () => social.showAttendees?.(ev.id, ev.title));
-      actions.unshift(attendees);
-      actions.unshift(attend);
-      refreshAttendance();
-    }
-    const favId = 1000000000 + Number(ev.id);                    // même identifiant que sur l'accueil (account.js)
-    if (social?.toggleFavorite && Number.isFinite(favId)) {
-      const fav = h('button', { class: 'btn btn-line', type: 'button' });
-      const paint = () => {
-        const on = Boolean(social.isFavorite?.(favId));
-        fav.textContent = on ? '♥ Retirer des favoris' : '♡ Ajouter aux favoris';
-        fav.classList.toggle('favorite-active', on);
-      };
-      fav.addEventListener('click', async () => { await social.toggleFavorite({ id: favId, dbId: ev.id, source: 'supabase' }); paint(); });
-      paint();
-      actions.unshift(fav);
-    }
-    if (navigator.share) {
-      actions.push(h('button', {
-        class: 'btn btn-line', type: 'button', text: 'Partager',
-        onclick: () => navigator.share({ title: ev.title, url: location.href }).catch(() => {}),
-      }));
-    }
-
-    return [
-      h('button', { class: 'dialog-x', type: 'button', 'aria-label': 'Fermer', text: '×', onclick: () => el.dlg.close() }),
-      h('div', { class: 'event-detail-hero' },
-        h('span', { class: 'featured-badge', text: CATS[ev.cat] || 'Événement' }),
-        h('h2', { id: 'eventDlgTitle', text: ev.title })),
-      h('div', { class: 'event-detail-content' },
-        h('div', { class: 'detail-layout' },
-          h('div', { class: 'detail-main' },
-            ev.desc && h('div', { class: 'detail-box' }, h('h3', { text: 'À propos' }), h('p', { class: 'detail-desc', text: ev.desc })),
-            ev.image && h('div', { class: 'detail-box' },
-              h('h3', { text: 'Affiche' }),
-              h('img', { class: 'detail-poster', src: ev.image, alt: `Affiche : ${ev.title}`, loading: 'lazy' }))),
-          h('div', { class: 'detail-side' },
-            ev.userId && h('div', { class: 'detail-box' },
-              h('h3', { text: 'Organisateur' }),
-              h('button', {
-                class: 'organizer-link', type: 'button',
-                onclick: () => social?.openPublicProfile?.(ev.userId),
-              }, h('div', { class: 'organizer-avatar', text: 'ME' }), h('strong', { class: 'organizer-name', text: 'Organisateur' }))),
-            h('div', { class: 'detail-box' },
-              h('h3', { text: 'Infos pratiques' }),
-              h('div', { class: 'detail-meta' },
-                when && metaRow('Date', when),
-                where && metaRow('Lieu', where),
-                area && metaRow('Secteur', area),
-                ev.sub && metaRow('Type', ev.sub)),
-              actions.length > 0 && h('div', { class: 'detail-actions' }, actions))))),
-    ];
-  }
-
   // Nom et photo de l'organisateur, chargés après l'ouverture de la fiche
-  async function fillOrganizer(ev) {
-    const name = el.detail.querySelector('.organizer-name');
-    if (!name || !ev.userId) return;
-    try {
-      const { rows } = await api(
-        { select: 'id,display_name,username,avatar_url', id: `eq.${ev.userId}`, limit: '1' },
-        { table: 'profiles' });
-      const p = rows[0];
-      if (!p || !name.isConnected) return;                        // fiche déjà fermée ou remplacée
-      const label = p.display_name || p.username || 'Organisateur';
-      name.textContent = label;
-      const avatar = name.parentElement.querySelector('.organizer-avatar');
-      const img = safeImg(p.avatar_url);
-      if (img) avatar.replaceWith(h('img', { class: 'organizer-avatar-img', src: img, alt: '', loading: 'lazy' }));
-      else avatar.textContent = label.slice(0, 2).toUpperCase();
-    } catch (err) { console.error('[événements] organisateur', err); }
+  async function loadOrganizer(m) {
+    const { rows } = await api(
+      { select: 'id,display_name,username,avatar_url', id: `eq.${m.organizer.id}`, limit: '1' },
+      { table: 'profiles' });
+    const p = rows[0];
+    return p ? { name: p.display_name || p.username || 'Organisateur', avatar: safeImg(p.avatar_url) } : null;
   }
 
   async function openEvent(id, { fetchIfMissing = false } = {}) {
@@ -403,10 +274,15 @@
       } catch (err) { console.error('[événements]', err); }
     }
     if (!ev) return;
-    el.detail.replaceChildren(...detail(ev));
-    if (!el.dlg.open) el.dlg.showModal();
+    const social = window.ME_SOCIAL;
+    window.ME_EVENT_UI.openDetail(toModel(ev), {
+      favorites: social?.toggleFavorite && Number.isFinite(favId(ev.id)) ? {
+        isOn: (m) => Boolean(window.ME_SOCIAL?.isFavorite?.(favId(m.id))),
+        toggle: (m) => window.ME_SOCIAL?.toggleFavorite?.({ id: favId(m.id), dbId: m.dbId, source: 'supabase' }),
+      } : null,
+      resolveOrganizer: loadOrganizer,
+    });
     syncUrl(`#e-${ev.id}`);
-    fillOrganizer(ev);
   }
 
   /* ---------- Rendu de la liste ---------- */
@@ -479,7 +355,7 @@
       state.hasMore = hasMore;
 
       if (!append) el.cards.replaceChildren();
-      const nodes = fresh.map(card);
+      const nodes = fresh.map(cardOf);
       el.cards.append(...nodes);
 
       updateCount();
@@ -588,13 +464,6 @@
   });
   el.more.addEventListener('click', () => { if (!state.loading) load({ append: true }); });
 
-  el.cards.addEventListener('click', (e) => {
-    const link = e.target.closest('a[data-id]');
-    if (!link) return;
-    e.preventDefault();
-    openEvent(link.dataset.id);
-  });
-  el.dlg.addEventListener('click', (e) => { if (e.target === el.dlg) el.dlg.close(); });   // clic sur le fond
   el.dlg.addEventListener('close', () => syncUrl());
 
   /* ---------- Démarrage ---------- */

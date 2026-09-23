@@ -11,6 +11,33 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
   const $ = (s, r = document) => r.querySelector(s);
   const safeText = (v, max = 5000) => String(v ?? '').trim().slice(0, max);
   const allowedImage = file => file && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type) && file.size <= 5 * 1024 * 1024;
+
+  // Compresse/redimensionne une image côté navigateur avant l'envoi vers Supabase Storage.
+  // Réduit fortement le poids des photos (souvent 3-5 Mo) sans passer par un serveur.
+  async function compressImage(file, { maxSize = 1600, quality = 0.82, mime = 'image/webp' } = {}) {
+    if (!file || !file.type?.startsWith('image/')) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      let { width, height } = bitmap;
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.max(1, Math.round(width * ratio));
+        height = Math.max(1, Math.round(height * ratio));
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, mime, quality));
+      if (!blob || blob.size >= file.size) return file;  // le fichier d'origine était déjà plus léger
+      const base = file.name.replace(/\.[a-z0-9]+$/i, '');
+      return new File([blob], `${base}.webp`, { type: mime });
+    } catch (err) {
+      console.error('[compression image]', err);
+      return file;  // navigateur trop ancien ou image invalide : on envoie l'original
+    }
+  }
   const validUrl = value => {
     if (!value) return true;
     try { return ['http:', 'https:'].includes(new URL(value).protocol); } catch { return false; }

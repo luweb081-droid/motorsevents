@@ -1415,3 +1415,10 @@ body:has(dialog[open]) { overflow: hidden; }
 .attendee-avatar-fallback{background:var(--navy);color:var(--orange);font-weight:700}
 .attendees-count{font-weight:600;color:var(--muted)}
 @media (max-width:600px){.card-actions{width:100%;margin-left:0}.card-actions .btn{flex:1}.card-foot{align-items:flex-start}}
+/* Cartes événements : même rendu partout (accueil = page Événements) */
+.events { background: transparent; border: 0; }
+.card h3 { overflow-wrap: anywhere; }
+.empty {
+  margin-top: 1rem; padding: 1.5rem; background: #fff;
+  border: 1.5px dashed var(--line); border-radius: 12px;
+}

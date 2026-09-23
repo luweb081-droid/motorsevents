@@ -35,30 +35,7 @@
   <symbol id="i-chevron" viewBox="0 0 48 48"><path d="M18 10l14 14-14 14"/></symbol>
 </svg>
 
-<header class="site-header on-dark">
-  <div class="wrap bar">
-    <a class="brand" href="./index.html" aria-label="Motor's Events, accueil">
-      <svg width="34" height="28" viewBox="0 0 34 28" aria-hidden="true"><polygon points="9,0 34,0 25,28 0,28" fill="#FF5B14"/><polygon points="15,7 28,7 24,21 11,21" fill="#0A1A3B"/></svg>
-      Motor's Events
-    </a>
-    <nav class="main-nav" aria-label="Navigation principale">
-      <ul>
-        <li><a href="./index.html#categories">Catégories</a></li>
-        <li><a href="./evenements.html" aria-current="page">Événements</a></li>
-        <li><a href="./index.html#featured">À la une</a></li>
-        <li><a href="./index.html#regions">Régions</a></li>
-        <li><a href="./index.html#community">Communauté</a></li>
-        <li><a href="./index.html#contact">Contact</a></li>
-      </ul>
-    </nav>
-    <div class="actions">
-      <button class="login" id="favoritesBtn" type="button" hidden>♡ Favoris <span id="favCount">0</span></button>
-      <button class="login" id="alertsBtn" type="button" hidden>🔔 Alertes</button>
-      <button class="account-btn" id="accountBtn" type="button" aria-label="Se connecter">Se connecter</button>
-      <a class="btn btn-orange" id="headerAddBtn" href="./index.html#publier" hidden>Ajouter un événement</a>
-    </div>
-  </div>
-</header>
+<div id="site-header"></div>
 
 <main id="top">
   <section class="page-head on-dark" aria-labelledby="titre">
@@ -134,31 +111,16 @@
   </section>
 </main>
 
-<div class="checker" aria-hidden="true"></div>
-<footer class="site-footer on-dark" id="contact">
-  <div class="wrap">
-    <div class="footer-grid">
-      <div>
-        <a class="brand" href="#top">Motor's Events</a>
-        <p>Le site de référencement des événements auto, moto, quad, truck, nautisme et aviation en France.</p>
-      </div>
-      <ul class="footer-links">
-        <li><a href="./index.html#contact">Contact</a></li>
-        <li><a href="./index.html#contact">Mentions légales</a></li>
-        <li><a href="./index.html#contact">Conditions d'utilisation</a></li>
-        <li><a href="./index.html#contact">Politique de confidentialité</a></li>
-        <li><a href="./index.html#contact">Gestion des cookies</a></li>
-      </ul>
-    </div>
-  </div>
-</footer>
+<div id="site-footer"></div>
 
 <dialog id="eventDlg" class="event-dialog" aria-labelledby="eventDlgTitle">
   <div class="event-detail" id="eventDetail"></div>
 </dialog>
 
+<script src="./layout.js"></script>
 <script src="./supabase-config.js"></script>
 <script src="./evenements.js" defer></script>
+<script src="./event-ui.js" defer></script>
 <script type="module" src="./account.js"></script>
 </body>
 </html>

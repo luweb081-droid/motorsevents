@@ -301,82 +301,20 @@
     $('#regionList').append(el('li', {}, b));
   });
 
-  /* Participation aux événements */
-  function attendanceWidget(e, compact = false) {
-    const wrap = el('div', { class: `event-attendance${compact ? ' compact' : ''}` });
-    const btn = el('button', { class: 'event-attendance-btn', type: 'button', disabled: 'true', text: 'J’y vais' });
-    const countBtn = el('button', { class: 'event-attendance-count', type: 'button', text: '👥 0' });
-    wrap.append(btn, countBtn);
-
-    if (e.source !== 'supabase' || !e.dbId) {
-      btn.disabled = true;
-      countBtn.disabled = true;
-      return wrap;
-    }
-
-    const load = async () => {
-      const api = window.ME_SOCIAL;
-      if (!api?.getAttendanceState) return;
-      const state = await api.getAttendanceState(e.dbId);
-      if (!state) return;
-      btn.disabled = false;
-      btn.classList.toggle('is-going', state.going);
-      btn.textContent = state.going ? '✓ J’y vais' : 'J’y vais';
-      countBtn.textContent = `👥 ${state.count}`;
-      countBtn.disabled = state.count === 0;
-      countBtn.title = state.count ? 'Voir les participants' : 'Aucun participant pour le moment';
-    };
-
-    btn.addEventListener('click', async ev => {
-      ev.preventDefault(); ev.stopPropagation();
-      const api = window.ME_SOCIAL;
-      if (!api?.toggleAttendance) return;
-      btn.disabled = true;
-      const going = await api.toggleAttendance(e.dbId, e.title);
-      await load();
-      if (going === false && !window.ME_SOCIAL) return;
-    });
-    countBtn.addEventListener('click', ev => {
-      ev.preventDefault(); ev.stopPropagation();
-      window.ME_SOCIAL?.showAttendees?.(e.dbId, e.title);
-    });
-
-    // account.js peut être chargé après script.js : on recharge dès que l’API sociale est prête.
-    window.addEventListener('motors:social-ready', load, { once: true });
-    load();
-    return wrap;
-  }
-
-  /* Cartes */
-  function card(e) {
-    const day = fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long' });
-    const link = el('a', { href: '#', text: e.title, 'aria-label': `${e.title}, ${e.city}, ${day}` });
-    link.addEventListener('click', ev => { ev.preventDefault(); openEvent(e.id); });
-    const img = safeImg(e.image_url);
-    const cover = el('div', { class: `cover${img ? ' has-img' : ''}` },
-      img ? el('img', { class: 'cover-img', src: img, alt: '', loading: 'lazy' }) : icon(e.cat, 'icon big'),
-      el('div', { class: 'date' },
-        el('small', { text: fmt(e.date, { weekday: 'short' }) }),
-        el('b', { text: fmt(e.date, { day: 'numeric' }) }),
-        el('small', { text: fmt(e.date, { month: 'short' }) })
-      )
-    );
-    const body = el('div', { class: 'card-body' },
-      el('p', { class: 'card-cat' }, icon(e.cat), `${CATS[e.cat]}, ${e.sub}`),
-      el('h3', {}, link),
-      el('p', { class: 'card-place' }, icon('pin'), `${e.city}, ${e.region}`),
-      el('div', { class: 'card-event-date' },
-        el('span', { class: 'card-event-date-main' }, icon('pin'), dateLabel(e.date, e.endDate)),
-        el('span', { class: 'card-event-duration', text: `⏱ ${durationLabel(e.date, e.endDate)}` })
-      ),
-      attendanceWidget(e),
-      el('div', { class: 'card-foot' },
-        el('span', { class: 'price', text: e.price }),
-        el('span', { class: 'go' }, 'Voir l\'événement', icon('chevron'))
-      )
-    );
-    return el('li', {}, el('article', { class: `card cat-${e.cat}` }, cover, body));
-  }
+  /* Cartes et fiche événement : rendu commun avec la page « Événements » (event-ui.js).
+     On convertit simplement nos données vers le modèle attendu par event-ui.js. */
+  const UI = window.ME_EVENT_UI;
+  const toModel = e => ({
+    id: e.id,
+    dbId: e.source === 'supabase' && e.dbId ? e.dbId : null,
+    title: e.title, cat: e.cat, sub: e.sub,
+    start: e.date, end: e.endDate,
+    city: e.city, region: e.region, place: e.address || '',
+    desc: e.description, image: safeImg(e.image_url), url: safeExternalUrl(e.url), price: e.price,
+    organizer: { id: e.organizerId, name: e.organizer, avatar: e.organizerAvatar, verified: e.verified }
+  });
+  const favorites = { isOn: ev => isFav(ev.id), toggle: ev => toggleFav(ev.id) };
+  const card = e => UI.card(toModel(e), { onOpen: () => openEvent(e.id) });
 
   function render() {
     const w = WHEN[state.when];
@@ -489,10 +427,9 @@
     updateFavCount();
   };
   const isFav = id => getFavs().includes(id);
-  function toggleFav(id){ const e=ALL_EVENTS.find(x=>x.id===id); if(window.ME_SOCIAL && e && e.source==='supabase'){ window.ME_SOCIAL.toggleFavorite(e); return; } const f=getFavs(); const i=f.indexOf(id); i>=0?f.splice(i,1):f.push(id); setFavs(f); }
+  function toggleFav(id){ const e=ALL_EVENTS.find(x=>x.id===id); if(window.ME_SOCIAL && e && e.source==='supabase'){ return window.ME_SOCIAL.toggleFavorite(e); } const f=getFavs(); const i=f.indexOf(id); i>=0?f.splice(i,1):f.push(id); setFavs(f); }
   function updateFavCount(){ $('#favCount').textContent=getFavs().length; }
 
-  const eventDlg=$('#eventDlg'), eventDetail=$('#eventDetail');
   const safeExternalUrl = value => {
     try {
       const u = new URL(String(value || ''), location.origin);
@@ -501,60 +438,9 @@
     } catch (_) { return null; }
   };
   function openEvent(id){
-    const e=ALL_EVENTS.find(x=>x.id===id); if(!e) return;
-    const fav=isFav(id);
-    eventDetail.replaceChildren();
-    const img=safeImg(e.image_url);
-    const hero=el('div',{class:`event-detail-hero${img?' has-img':''}`},
-      img?el('img',{class:'event-detail-img',src:img,alt:''}):null,
-      img?el('div',{class:'event-detail-shade'}):null,
-      el('span',{class:'featured-badge',text:CATS[e.cat]}),
-      el('h2',{text:e.title}),
-      el('p',{text:`${e.city} · ${dateLabel(e.date, e.endDate)} · ${durationLabel(e.date, e.endDate)}`})
-    );
-    const content=el('div',{class:'event-detail-content'});
-    const layout=el('div',{class:'detail-layout'});
-    const left=el('div');
-    left.append(el('div',{class:'detail-box'},
-      el('h3',{text:'À propos'}), el('p',{text:e.description}),
-      el('div',{class:'detail-actions'},
-        el('button',{class:`btn btn-line ${fav?'favorite-active':''}`,type:'button',text:fav?'♥ Retirer des favoris':'♡ Ajouter aux favoris'}),
-        el('button',{class:'btn btn-line',type:'button',text:'Partager'}),
-        ...(safeExternalUrl(e.url) ? [el('a',{class:'btn btn-orange',href:safeExternalUrl(e.url),target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer',text:'Site officiel'})] : [])
-      )
-    ));
-    const shareBtn=left.querySelectorAll('button')[1];
-    const favBtn=left.querySelectorAll('button')[0];
-    favBtn.addEventListener('click',()=>{toggleFav(id);openEvent(id);});
-    shareBtn.addEventListener('click',async()=>{ const data={title:e.title,text:`${e.title} — Motor's Events`,url:location.href}; if(navigator.share){try{await navigator.share(data)}catch(_){}} else {await navigator.clipboard?.writeText(location.href); shareBtn.textContent='Lien copié';} });
-    if(img) left.append(el('div',{class:'detail-box'},el('h3',{text:'Affiche'}),el('a',{href:img,target:'_blank',rel:'noopener noreferrer'},el('img',{class:'detail-poster',src:img,alt:`Affiche : ${e.title}`,loading:'lazy'}))));
-    const right=el('aside');
-    const orgAvatar=e.organizerAvatar?el('img',{src:e.organizerAvatar,alt:'',class:'organizer-avatar-img',loading:'lazy'}):el('div',{class:'organizer-avatar',text:(e.organizer||'ME').slice(0,2).toUpperCase()});
-    const orgButton=el('button',{class:'organizer-link',type:'button'},orgAvatar,el('div',{},el('strong',{text:e.organizer||'Organisateur'}),e.verified?el('span',{class:'verified',text:'✓ Organisateur vérifié'}):null));
-    if(e.organizerId && window.ME_SOCIAL?.openPublicProfile) orgButton.addEventListener('click',()=>window.ME_SOCIAL.openPublicProfile(e.organizerId));
-    const org=el('div',{class:'detail-box'},el('h3',{text:'Organisateur'}),orgButton);
-    right.append(org);
-    const infoBox = el('div',{class:'detail-box'});
-    infoBox.append(el('h3',{text:'Informations'}));
-    const meta = el('div',{class:'detail-meta'});
-    meta.append(
-      el('div',{},el('strong',{text:'📅'}),el('span',{text:dateLabel(e.date, e.endDate)})),
-      el('div',{},el('strong',{text:'⏱'}),el('span',{text:`Durée : ${durationLabel(e.date, e.endDate)}`})),
-      el('div',{},el('strong',{text:'📍'}),el('span',{text:e.address || `${e.city}, ${e.region}`})),
-      el('div',{},el('strong',{text:'🎟'}),el('span',{text:e.price}))
-    );
-    infoBox.append(meta);
-    right.append(infoBox);
-    if (e.source === 'supabase' && e.dbId) {
-      const attendanceBox = el('div',{class:'detail-box event-attendance-detail'},
-        el('h3',{text:'Participation'}),
-        attendanceWidget(e)
-      );
-      right.append(attendanceBox);
-    }
-    layout.append(left,right); content.append(layout); eventDetail.append(hero,content); eventDlg.showModal();
+    const e = ALL_EVENTS.find(x => x.id === id); if (!e) return;
+    UI.openDetail(toModel(e), { favorites });
   }
-  eventDlg.addEventListener('click',ev=>{if(ev.target===eventDlg)eventDlg.close()});
   window.addEventListener('motors:open-db-event', ev => { const id=Number(ev.detail); const e=ALL_EVENTS.find(x=>x.dbId===id); if(e) openEvent(e.id); });
 
   function renderFeatured(){
