@@ -136,6 +136,11 @@
 
   let eventsMap = null;
   let mapMarkers = [];
+  let mapUserView = false; // true dès que des filtres recentrent la carte
+
+  // Vue par défaut : la France métropolitaine, quelle que soit la taille de l'écran
+  const FRANCE_BOUNDS = [[41.3, -5.2], [51.2, 9.6]];
+  const showFrance = () => eventsMap.fitBounds(FRANCE_BOUNDS, { animate: false });
 
   const mapNorm = value => norm(String(value || ''))
     .replace(/['’]/g, '')
@@ -175,15 +180,17 @@
       zoomControl: true,
       scrollWheelZoom: true,
       minZoom: 4,
-      maxZoom: 12
-    }).setView([46.55, 2.45], 5.5);
+      maxZoom: 12,
+      zoomSnap: 0.25
+    });
+    showFrance();
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(eventsMap);
 
-    setTimeout(() => eventsMap.invalidateSize(), 50);
+    setTimeout(() => { eventsMap.invalidateSize(); if (!mapUserView) showFrance(); }, 50);
   }
 
   function escapeMapHtml(value) {
@@ -251,12 +258,14 @@
       bounds.push(position.coords);
     });
 
-    if (bounds.length === 1) {
+    const filtersActive = Object.keys(DEFAULT).some(k => state[k] !== DEFAULT[k]);
+    mapUserView = filtersActive && bounds.length > 0;
+    if (mapUserView && bounds.length === 1) {
       eventsMap.setView(bounds[0], 8, { animate:false });
-    } else if (bounds.length > 1) {
+    } else if (mapUserView) {
       eventsMap.fitBounds(bounds, { padding:[35,35], maxZoom:8, animate:false });
     } else {
-      eventsMap.setView([46.55, 2.45], 5.5, { animate:false });
+      showFrance(); // par défaut : toute la France
     }
 
     if (status) {
@@ -303,7 +312,8 @@
 
   /* Cartes et fiche événement : rendu commun avec la page « Événements » (event-ui.js).
      On convertit simplement nos données vers le modèle attendu par event-ui.js. */
-  const UI = window.ME_EVENT_UI;
+  // Lu à l'usage (pas au chargement) : event-ui.js peut arriver après ce fichier
+  const ui = () => window.ME_EVENT_UI;
   const toModel = e => ({
     id: e.id,
     dbId: e.source === 'supabase' && e.dbId ? e.dbId : null,
@@ -314,7 +324,7 @@
     organizer: { id: e.organizerId, name: e.organizer, avatar: e.organizerAvatar, verified: e.verified }
   });
   const favorites = { isOn: ev => isFav(ev.id), toggle: ev => toggleFav(ev.id) };
-  const card = e => UI.card(toModel(e), { onOpen: () => openEvent(e.id) });
+  const card = e => ui().card(toModel(e), { onOpen: () => openEvent(e.id) });
 
   function render() {
     const w = WHEN[state.when];
@@ -349,17 +359,17 @@
     }
 
     tilesEl.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.cat === state.cat)));
-    whatEl.value = state.what;
-    whereEl.value = state.where;
-    whenEl.value = state.when;
+    if (whatEl) whatEl.value = state.what;
+    if (whereEl) whereEl.value = state.where;
+    if (whenEl) whenEl.value = state.when;
     resetTop.hidden = Object.keys(DEFAULT).every(k => state[k] === DEFAULT[k]);
   }
 
   /* Recherche */
-  whatEl.addEventListener('input', () => { state.what = whatEl.value; render(); });
-  whereEl.addEventListener('input', () => { state.where = whereEl.value; render(); });
-  whenEl.addEventListener('change', () => { state.when = whenEl.value; render(); });
-  $('#search').addEventListener('submit', ev => { ev.preventDefault(); render(); });
+  whatEl?.addEventListener('input', () => { state.what = whatEl.value; render(); });
+  whereEl?.addEventListener('input', () => { state.where = whereEl.value; render(); });
+  whenEl?.addEventListener('change', () => { state.when = whenEl.value; render(); });
+  $('#search')?.addEventListener('submit', ev => { ev.preventDefault(); render(); });
   const reset = () => { Object.assign(state, DEFAULT); render(); };
   resetTop.addEventListener('click', reset);
   $('#resetEmpty').addEventListener('click', reset);
@@ -439,7 +449,7 @@
   };
   function openEvent(id){
     const e = ALL_EVENTS.find(x => x.id === id); if (!e) return;
-    UI.openDetail(toModel(e), { favorites });
+    ui().openDetail(toModel(e), { favorites });
   }
   window.addEventListener('motors:open-db-event', ev => { const id=Number(ev.detail); const e=ALL_EVENTS.find(x=>x.dbId===id); if(e) openEvent(e.id); });
 

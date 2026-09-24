@@ -1,0 +1,11 @@
+/* Icônes réseaux sociaux (header + footer) — chargé automatiquement par layout.js */
+.socials{display:flex;align-items:center;gap:8px}
+.socials-footer{margin-top:18px;gap:10px}
+.social-link{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.22);color:#fff;text-decoration:none;
+  transition:background .25s,border-color .25s,transform .25s,color .25s}
+.social-link:hover,.social-link:focus-visible{background:#ff6a00;border-color:#ff6a00;transform:translateY(-3px) rotate(-6deg)}
+.social-link svg{display:block}
+.socials-header{margin-right:6px}
+@media (max-width:900px){.socials-header{display:none}} /* barre trop chargée sur mobile : les icônes restent dans le pied de page */
+@media (prefers-reduced-motion:reduce){.social-link{transition:none}.social-link:hover{transform:none}}

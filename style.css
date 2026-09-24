@@ -517,12 +517,16 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
 .hero-content {
   position: relative;
   z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: clamp(1.75rem, 4vw, 4rem);
+  align-items: center;
 }
 
 .hero-copy {
   position: relative;
   z-index: 10;
-  width: min(720px, 58%);
+  min-width: 0;
 }
 
 /* Petit label */
@@ -555,7 +559,7 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
   margin-bottom: 1.35rem;
 
   font:
-    italic 800 clamp(4rem, 7vw, 7rem)/.84
+    italic 800 clamp(2.8rem, 4.8vw, 5.5rem)/.86
     var(--display);
 
   letter-spacing: -.015em;
@@ -841,9 +845,9 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
 
 /* ===== Carte interactive des événements ===== */
 .hero-map-panel {
-  margin-top: 2rem;
+  margin-top: 0;
   width: 100%;
-  max-width: 760px;
+  max-width: none;
   position: relative;
   z-index: 30;
 }
@@ -977,7 +981,7 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
 @media (max-width: 1100px) {
 
   .hero-copy {
-    width: 62%;
+    width: auto;
   }
 
   .hero-car {
@@ -996,6 +1000,10 @@ dialog::backdrop { background: rgb(10 26 59 / .7); }
   .hero-copy {
     width: 100%;
     max-width: 650px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.5rem, 9vw, 5.5rem);
   }
 
   .hero-car {

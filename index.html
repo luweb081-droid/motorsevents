@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:ital,wght@1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./animations.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 
 <style id="event-date-duration-fix">
@@ -58,8 +59,8 @@
       </span>
 
       <h1 id="titre">
-        Ne ratez plus<br>
-        aucun <em>rasso.</em>
+        <span class="line"><span class="line-in">Ne ratez plus</span></span>
+        <span class="line"><span class="line-in">aucun <em>rasso.</em></span></span>
       </h1>
 
       <p class="lede">
@@ -68,60 +69,34 @@
         et les passionnés.
       </p>
 
-      <button class="hero-add-event" id="heroAddEvent" type="button">
-        <span class="hero-add-event-icon">＋</span>
-        <span>Ajouter un événement</span>
-        <small>Publier gratuitement votre rasso</small>
-      </button>
-
-      <section class="hero-map-panel" aria-labelledby="hero-map-title">
-        <div class="hero-map-head">
-          <div>
-            <span class="hero-map-kicker">CARTE DES RASSOS</span>
-            <h2 id="hero-map-title">Les événements près de chez vous.</h2>
-          </div>
-          <div class="hero-map-stats" aria-live="polite">
-            <strong id="mapEventCount">0</strong>
-            <span>événements</span>
-          </div>
-        </div>
-
-        <div class="hero-map-wrap">
-          <div id="eventsMap" class="events-map" aria-label="Carte interactive de France"></div>
-          <div class="map-legend">
-            <span><i class="map-dot auto"></i> Auto</span>
-            <span><i class="map-dot moto"></i> Moto</span>
-            <span><i class="map-dot quad"></i> Quad</span>
-            <span><i class="map-dot truck"></i> Truck</span>
-            <span><i class="map-dot nautisme"></i> Nautisme</span>
-            <span><i class="map-dot aviation"></i> Aviation</span>
-          </div>
-        </div>
-
-        <form class="map-filters" id="search" role="search" aria-label="Filtrer les événements sur la carte">
-          <div class="map-filter">
-            <label for="what">Quoi</label>
-            <input id="what" type="search" placeholder="Rassemblement, rallye, balade…" autocomplete="off">
-          </div>
-          <div class="map-filter">
-            <label for="where">Où</label>
-            <input id="where" type="search" placeholder="Ville ou région" autocomplete="off">
-          </div>
-          <div class="map-filter">
-            <label for="when">Quand</label>
-            <select id="when">
-              <option value="weekend">Ce week-end</option>
-              <option value="next">Le week-end prochain</option>
-              <option value="month">30 prochains jours</option>
-              <option value="all">Toutes les dates</option>
-            </select>
-          </div>
-          <button class="btn btn-orange btn-search" type="submit">Filtrer la carte</button>
-        </form>
-
-        <p class="hero-map-note" id="mapStatus">Chargement des événements…</p>
-      </section>
     </div>
+
+    <section class="hero-map-panel" aria-labelledby="hero-map-title">
+      <div class="hero-map-head">
+        <div>
+          <span class="hero-map-kicker">CARTE DES RASSOS</span>
+          <h2 id="hero-map-title">Les événements près de chez vous.</h2>
+        </div>
+        <div class="hero-map-stats" aria-live="polite">
+          <strong id="mapEventCount">0</strong>
+          <span>événements</span>
+        </div>
+      </div>
+
+      <div class="hero-map-wrap">
+        <div id="eventsMap" class="events-map" aria-label="Carte interactive de France"></div>
+        <div class="map-legend">
+          <span><i class="map-dot auto"></i> Auto</span>
+          <span><i class="map-dot moto"></i> Moto</span>
+          <span><i class="map-dot quad"></i> Quad</span>
+          <span><i class="map-dot truck"></i> Truck</span>
+          <span><i class="map-dot nautisme"></i> Nautisme</span>
+          <span><i class="map-dot aviation"></i> Aviation</span>
+        </div>
+      </div>
+
+      <p class="hero-map-note" id="mapStatus">Chargement des événements…</p>
+    </section>
   </div>
 
   <div class="hero-bottom">
@@ -366,8 +341,9 @@
 <script src="./layout.js"></script>
 <script src="./supabase-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./script.js" defer></script>
 <script src="./event-ui.js" defer></script>
+<script src="./script.js" defer></script>
 <script type="module" src="./account.js"></script>
+<script src="./animations.js" defer></script>
 </body>
 </html>

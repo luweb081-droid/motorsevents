@@ -1,0 +1,74 @@
+/* Animations de l'accueil — Motor's Events (s'ajoute après style.css) */
+:root{--anim-or:#ff6a00;--h1-size:clamp(2.8rem,5.8vw,5.4rem)}
+
+/* ---- Titre plus grand ---- */
+.hero-copy{min-width:0}
+#titre{font-size:var(--h1-size);line-height:.94}
+#titre .line{display:block;overflow:hidden;padding:0 .14em .16em 0;margin-bottom:-.1em}
+#titre .line>span,#titre .line>em{display:inline-block}
+#titre .line-in{display:inline-block;animation:lineUp .9s cubic-bezier(.2,.8,.2,1) backwards}
+#titre .line:nth-child(1) .line-in{animation-delay:.15s}
+#titre .line:nth-child(2) .line-in{animation-delay:.35s}
+
+/* ---- « rasso. » souligné qui se dessine puis brille ---- */
+#titre em{position:relative;display:inline-block}
+#titre em::after{content:"";position:absolute;left:-.03em;right:-.05em;bottom:-.13em;height:.085em;border-radius:2px;
+  background:linear-gradient(90deg,var(--anim-or) 0%,#ffb37a 45%,var(--anim-or) 90%);background-size:220% 100%;
+  transform:scaleX(0) skewX(-20deg);transform-origin:left center;
+  animation:drawLine .8s cubic-bezier(.7,0,.2,1) 1.1s forwards,shine 2.8s linear 2.2s infinite}
+
+/* ---- Entrée du hero ---- */
+.hero-kicker{animation:fadeUp .7s ease backwards}
+.hero-kicker>span:first-child{animation:pulseW 2.4s ease-in-out infinite;transform-origin:left}
+.hero .lede{animation:fadeUp .8s ease .6s backwards}
+.hero-map-panel{animation:slideIn 1s cubic-bezier(.2,.8,.2,1) .5s backwards}
+.hero-bottom{animation:fadeUp .8s ease 1s backwards}
+.hero-scroll-line{transform-origin:top;animation:scrollLine 1.8s ease-in-out infinite}
+.map-legend .map-dot{animation:dotPulse 2.6s ease-in-out infinite}
+.map-legend span:nth-child(2) .map-dot{animation-delay:.2s}.map-legend span:nth-child(3) .map-dot{animation-delay:.4s}
+.map-legend span:nth-child(4) .map-dot{animation-delay:.6s}.map-legend span:nth-child(5) .map-dot{animation-delay:.8s}
+.map-legend span:nth-child(6) .map-dot{animation-delay:1s}
+
+/* ---- Interactions ---- */
+.quick-card{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s}
+.quick-card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(7,20,47,.18)}
+.quick-icon{display:inline-block;transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
+.quick-card:hover .quick-icon{transform:rotate(-12deg) scale(1.25)}
+.cards>li,.featured-grid>*,.tiles>*{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.cards>li:hover,.featured-grid>*:hover,.tiles>*:hover{transform:translateY(-6px);box-shadow:0 20px 44px rgba(0,0,0,.2)}
+.btn{transition:transform .25s,box-shadow .25s,background .25s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,106,0,.35)}
+.btn-orange{position:relative;overflow:hidden}
+.btn-orange::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:rgba(255,255,255,.35);transform:skewX(-22deg);transition:left .6s}
+.btn-orange:hover::after{left:130%}
+.pills li,.pills a{transition:transform .2s}
+.pills li:hover,.pills a:hover{transform:translateY(-3px)}
+.link-btn{transition:letter-spacing .25s,color .25s}
+.link-btn:hover{letter-spacing:.03em}
+.all-events-link span{display:inline-block;transition:transform .25s}
+.all-events-link:hover span{transform:translateX(6px)}
+
+/* ---- Apparition au scroll (classes ajoutées par animations.js) ---- */
+.js-anim .rv{opacity:0;transform:translateY(34px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.2,1)}
+.js-anim .rv.rv-in{opacity:1;transform:none}
+.js-anim .steps li.rv{transform:translateY(34px) scale(.96)}
+.js-anim .steps li.rv-in .step-n{animation:pop .7s cubic-bezier(.3,1.6,.5,1) .2s backwards}
+
+/* ---- Barre de progression ---- */
+.scroll-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;background:linear-gradient(90deg,var(--anim-or),#ffb37a);transform:scaleX(0);transform-origin:left;pointer-events:none}
+
+@keyframes lineUp{from{transform:translateY(110%) skewY(4deg)}to{transform:none}}
+@keyframes drawLine{to{transform:scaleX(1) skewX(-20deg)}}
+@keyframes shine{to{background-position:-220% 0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(50px)}}
+@keyframes pulseW{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.7)}}
+@keyframes scrollLine{0%{transform:scaleY(0)}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@keyframes dotPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+@keyframes pop{from{transform:scale(0) rotate(-40deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  #titre em::after{transform:scaleX(1) skewX(-20deg)}
+  .js-anim .rv{opacity:1;transform:none}
+}

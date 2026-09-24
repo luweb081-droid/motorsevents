@@ -23,9 +23,16 @@
     { label: 'Catégories', href: './index.html#categories' },
     { label: 'Événements', href: './evenements.html' },
     { label: 'À la une',   href: './index.html#featured' },
-    { label: 'Régions',    href: './index.html#regions' },
     { label: 'Communauté', href: './index.html#community' },
-    { label: 'Contact',    href: '#contact' },               // #contact = le pied de page, présent sur toutes les pages
+    { label: 'Contact',    href: './contact.html' },               // #contact = le pied de page, présent sur toutes les pages
+  ];
+
+  // Réseaux sociaux : remplacez les adresses par celles de vos vraies pages.
+  // « header: true » = affiché dans la barre du haut ET dans le pied de page ; sinon, pied de page seulement.
+  const SOCIALS = [
+    { id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/motorsevents', header: true },
+    { id: 'facebook',  label: 'Facebook',  href: 'https://www.facebook.com/motorsevents',    header: true },
+    { id: 'youtube',   label: 'YouTube',   href: 'https://www.youtube.com/channel/UC59dT8S1aaZmm3Asd-96TDg',  header: false },
   ];
 
   const FOOTER_TEXT = 'Le site de référencement des événements auto, moto, quad, truck, nautisme et aviation en France.';
@@ -64,6 +71,36 @@
     + '<polygon points="9,0 34,0 25,28 0,28" fill="#FF5B14"/>'
     + '<polygon points="15,7 28,7 24,21 11,21" fill="#0A1A3B"/></svg>';
 
+  // Icônes des réseaux : constantes écrites ici, aucun contenu venant d'un utilisateur
+  const SOCIAL_ICONS = {
+    instagram: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">'
+      + '<path d="M14 13.5h2.5l1-4H14v-2c0-1.030 0-2 2-2h1.500V2.140C17.170 2.100 15.940 2 14.640 2 11.930 2 10 3.660 10 6.700v2.800H7v4h3V22h4z"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">'
+      + '<path d="M21.600 7.200a2.500 2.500 0 0 0-1.800-1.800C18.200 5 12 5 12 5s-6.200 0-7.800.4A2.500 2.500 0 0 0 2.400 7.200C2 8.800 2 12 2 12s0 3.200.4 4.800a2.500 2.500 0 0 0 1.800 1.800C5.800 19 12 19 12 19s6.200 0 7.800-.4a2.500 2.500 0 0 0 1.800-1.800c.4-1.600.4-4.800.4-4.800s0-3.200-.4-4.800zM10 15V9l5.200 3z"/></svg>',
+  };
+
+  function socialLinks(onlyHeader) {
+    const items = SOCIALS.filter((s) => s.href && (!onlyHeader || s.header));
+    if (!items.length) return null;
+    return h('div', { class: onlyHeader ? 'socials socials-header' : 'socials socials-footer' },
+      items.map((s) => {
+        const a = h('a', {
+          class: 'social-link', href: s.href, target: '_blank', rel: 'noopener noreferrer',
+          'aria-label': `${SITE_NAME} sur ${s.label}`, title: s.label,
+        });
+        a.insertAdjacentHTML('afterbegin', SOCIAL_ICONS[s.id] || '');
+        return a;
+      }));
+  }
+
+  // Petite feuille de style pour les icônes (fichier séparé : compatible avec une CSP stricte)
+  if (!document.querySelector('link[data-social-css]')) {
+    const css = h('link', { rel: 'stylesheet', href: './social.css', 'data-social-css': true });
+    document.head.append(css);
+  }
+
   // « /evenements.html », « /evenements » et « /evenements/ » sont la même page
   const cleanPath = (p) => p.replace(/index\.html$/, '').replace(/\.html$/, '').replace(/\/$/, '');
   const here = cleanPath(location.pathname);
@@ -90,6 +127,7 @@
         brand,
         h('nav', { class: 'main-nav', 'aria-label': 'Navigation principale' }, h('ul', {}, MENU.map(menuItem))),
         h('div', { class: 'actions' },
+          socialLinks(true),
           h('button', { class: 'login', id: 'favoritesBtn', type: 'button', hidden: true }, '♡ Favoris ', h('span', { id: 'favCount', text: '0' })),
           h('button', { class: 'login', id: 'alertsBtn', type: 'button', hidden: true, text: '🔔 Alertes' }),
           h('button', { class: 'account-btn', id: 'accountBtn', type: 'button', 'aria-label': 'Se connecter', text: 'Se connecter' }),
@@ -104,7 +142,8 @@
           h('div', { class: 'footer-grid' },
             h('div', {},
               h('a', { class: 'brand', href: './index.html', text: SITE_NAME }),
-              h('p', { text: FOOTER_TEXT })),
+              h('p', { text: FOOTER_TEXT }),
+              socialLinks(false)),
             h('ul', { class: 'footer-links' },
               FOOTER_LINKS.map(({ label, href }) => h('li', {}, h('a', { href, text: label }))))),
           h('div', { class: 'footer-legal-bottom' }, h('p', { text: COPYRIGHT })))),
