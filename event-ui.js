@@ -56,6 +56,7 @@
     clock: ['M24 8a16 16 0 1 0 0 32 16 16 0 0 0 0-32z', 'M24 16v9l6 4'],
     ticket: ['M6 15h36v7a3 3 0 0 0 0 6v7H6v-7a3 3 0 0 0 0-6z', 'M31 15v20'],
     users: ['M17 22a6 6 0 1 0 0-12 6 6 0 0 0 0 12z', 'M5 39c0-7 5-11 12-11s12 4 12 11', 'M32 22a5 5 0 1 0 0-10', 'M36 28c5 1 8 5 8 11'],
+    eye: ['M4 24s7-13 20-13 20 13 20 13-7 13-20 13S4 24 4 24z'],
   };
   (function ensureIcons() {
     const sprite = document.querySelector('svg.sprite');
@@ -72,6 +73,27 @@
       }
       sprite.append(sym);
     }
+  })();
+
+  (function ensureBadgeStyles() {
+    if (document.getElementById('me-badge-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'me-badge-styles';
+    style.textContent = `
+      .cover { position: relative; }
+      .price-badge, .views-badge {
+        position: absolute; bottom: 8px; z-index: 3;
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 4px 9px; border-radius: 999px;
+        font: 600 12px/1.2 inherit; white-space: nowrap;
+        background: rgba(17,17,17,.72); color: #fff;
+        backdrop-filter: blur(2px);
+      }
+      .price-badge .icon, .views-badge .icon { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 3; }
+      .price-badge { left: 8px; }
+      .views-badge { right: 8px; }
+    `;
+    document.head.append(style);
   })();
 
   /* ---------- Dates ---------- */
@@ -150,6 +172,11 @@
         h('b', { text: F.d.format(a) }),
         h('small', { text: F.mo.format(a) })));
     }
+    if (ev.price) {
+      cover.append(h('span', { class: 'price-badge' }, icon('ticket'), h('span', { text: String(ev.price).trim() })));
+    }
+    const viewCount = Math.max(0, Number(ev.views) || 0);
+    cover.append(h('span', { class: 'views-badge' }, icon('eye'), h('span', { text: String(viewCount) })));
 
     const where = [ev.city, ev.region].filter(Boolean).join(', ') || ev.place;
     const open = (e) => { e.preventDefault(); onOpen?.(ev); };
@@ -164,7 +191,6 @@
           ev.sub && h('span', { class: 'card-sub', text: ev.sub })),
         h('h3', {}, h('a', { href, text: ev.title, onclick: open })),
         where && h('p', { class: 'card-place' }, icon('pin'), h('span', { text: where })),
-        ev.price && h('p', { class: 'card-price' }, icon('ticket'), h('span', { text: String(ev.price).trim() })),
         h('div', { class: 'card-foot' },
           h('span', { class: 'price', text: isMulti(ev) ? range(F.short, ev) : '' }),
           h('div', { class: 'card-actions' },
@@ -358,7 +384,8 @@
         isMulti(ev) && infoRow('clock', 'Durée', `${nbDays(ev)} jours`),
         where && infoRow('pin', 'Lieu', where),
         ev.sub && infoRow(catIcon(ev), 'Type', `${catLabel(ev)} · ${ev.sub}`),
-        price && infoRow('ticket', 'Tarif', price)));
+        price && infoRow('ticket', 'Tarif', price),
+        infoRow('eye', 'Vues', String(Math.max(0, Number(ev.views) || 0)))));
 
     root.replaceChildren(
       h('button', { class: 'dialog-x', type: 'button', 'aria-label': 'Fermer', text: '×', onclick: () => dlg.close() }),

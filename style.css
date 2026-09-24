@@ -1430,3 +1430,143 @@ body:has(dialog[open]) { overflow: hidden; }
   margin-top: 1rem; padding: 1.5rem; background: #fff;
   border: 1.5px dashed var(--line); border-radius: 12px;
 }
+/* =========================================================
+   COMPTEUR DE VUES — CARTES ÉVÉNEMENTS
+   ========================================================= */
+
+.cover {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Compteur de vues */
+.views-badge {
+  position: absolute !important;
+
+  /* BAS DROITE */
+  right: 12px !important;
+  bottom: 12px !important;
+  left: auto !important;
+  top: auto !important;
+
+  z-index: 10;
+
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  min-width: 42px;
+  height: 28px;
+  padding: 0 9px;
+
+  border-radius: 999px;
+
+  /* Fond sombre légèrement transparent */
+  background: rgba(8, 15, 28, 0.78);
+
+  /* Petit effet verre */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* Bordure discrète */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  color: #fff;
+
+  font-family: Barlow, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.25);
+
+  pointer-events: none;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* L'œil */
+.views-badge .icon {
+  width: 15px !important;
+  height: 15px !important;
+
+  flex: 0 0 15px;
+
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.5 !important;
+
+  opacity: 0.95;
+}
+
+/* Nombre */
+.views-badge span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 10px;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Petit effet au survol de la carte */
+.card:hover .views-badge {
+  transform: translateY(-2px);
+
+  background: rgba(8, 15, 28, 0.9);
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+
+/* =========================================================
+   VERSION DES CARTES "À LA UNE"
+   ========================================================= */
+
+.featured-item {
+  position: relative;
+}
+
+.featured-item .views-badge {
+  right: 12px !important;
+  bottom: 12px !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .views-badge {
+    right: 9px !important;
+    bottom: 9px !important;
+
+    min-width: 38px;
+    height: 26px;
+
+    padding: 0 8px;
+
+    font-size: 12px;
+  }
+
+  .views-badge .icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .views-badge span {
+    font-size: 12px;
+  }
+}

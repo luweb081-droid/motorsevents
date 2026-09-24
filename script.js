@@ -320,7 +320,7 @@
     title: e.title, cat: e.cat, sub: e.sub,
     start: e.date, end: e.endDate,
     city: e.city, region: e.region, place: e.address || '',
-    desc: e.description, image: safeImg(e.image_url), url: safeExternalUrl(e.url), price: e.price,
+    desc: e.description, image: safeImg(e.image_url), url: safeExternalUrl(e.url), price: e.price, views: e.views,
     organizer: { id: e.organizerId, name: e.organizer, avatar: e.organizerAvatar, verified: e.verified }
   });
   const favorites = { isOn: ev => isFav(ev.id), toggle: ev => toggleFav(ev.id) };
@@ -447,15 +447,33 @@
       return u.href;
     } catch (_) { return null; }
   };
-  function openEvent(id){
+  async function openEvent(id){
     const e = ALL_EVENTS.find(x => x.id === id); if (!e) return;
+
+    const nextViews = await window.ME_EVENT_VIEWS?.increment?.(e.dbId);
+    if (nextViews != null) {
+      e.views = nextViews;
+      render();
+      renderFeatured();
+    }
+
     ui().openDetail(toModel(e), { favorites });
   }
   window.addEventListener('motors:open-db-event', ev => { const id=Number(ev.detail); const e=ALL_EVENTS.find(x=>x.dbId===id); if(e) openEvent(e.id); });
 
   function renderFeatured(){
     const top=ALL_EVENTS.filter(e=>(e.endDate||e.date)>=WHEN.all.from).sort((a,b)=>(!!safeImg(b.image_url))-(!!safeImg(a.image_url))||a.date.localeCompare(b.date)).slice(0,3);
-    $('#featuredGrid').replaceChildren(...top.map(e=>{const img=safeImg(e.image_url);return el('article',{class:'featured-item',tabindex:'0'},img?el('img',{class:'featured-item-image',src:img,alt:'',loading:'lazy'}):null,img?el('div',{class:'featured-item-overlay'}):null,el('div',{class:img?'featured-item-content':'featured-item-plain'},el('span',{class:'featured-badge',text:CATS[e.cat]}),el('h3',{text:e.title}),el('p',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`})));}));
+    $('#featuredGrid').replaceChildren(...top.map(e=>{
+      const img=safeImg(e.image_url);
+      const price=e.price && String(e.price).trim();
+      const views=Number(e.views)>0?String(e.views):'';
+      return el('article',{class:'featured-item',tabindex:'0'},
+        img?el('img',{class:'featured-item-image',src:img,alt:'',loading:'lazy'}):null,
+        img?el('div',{class:'featured-item-overlay'}):null,
+        price?el('span',{class:'price-badge'},icon('ticket'),el('span',{text:price})):null,
+        views?el('span',{class:'views-badge'},icon('eye'),el('span',{text:views})):null,
+        el('div',{class:img?'featured-item-content':'featured-item-plain'},el('span',{class:'featured-badge',text:CATS[e.cat]}),el('h3',{text:e.title}),el('p',{text:`${e.city} · ${fmt(e.date,{day:'numeric',month:'long'})}`})));
+    }));
     $('#featuredGrid').querySelectorAll('.featured-item').forEach((n,i)=>{n.addEventListener('click',()=>openEvent(top[i].id));n.addEventListener('keydown',ev=>{if(ev.key==='Enter')openEvent(top[i].id)})});
   }
   function renderCalendar(){

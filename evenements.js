@@ -23,6 +23,7 @@
       url: 'official_url',
       image: 'image_url',
       price: 'price',
+      views: 'views_count',
       user: 'user_id',
     },
     // Seuls les événements validés par l'équipe sont affichés.
@@ -188,6 +189,7 @@
       url: g('url') ? safeUrl(g('url')) : null,
       image: g('image') ? safeImg(g('image')) : null,
       price: g('price') || '',
+      views: Number(g('views')) || 0,
       userId: g('user') || null,
     };
   }
@@ -234,7 +236,7 @@
       title: ev.title, cat: ev.cat, sub: ev.sub,
       start: ev.start ? iso(ev.start) : '', end: ev.end ? iso(ev.end) : null,
       city: ev.city, region: ev.region, place: ev.place,
-      desc: ev.desc, image: ev.image, url: ev.url, price: ev.price,
+      desc: ev.desc, image: ev.image, url: ev.url, price: ev.price, views: ev.views,
       organizer: { id: ev.userId },
     };
   }
@@ -276,6 +278,15 @@
       } catch (err) { console.error('[événements]', err); }
     }
     if (!ev) return;
+
+    const nextViews = await window.ME_EVENT_VIEWS?.increment?.(ev.id);
+    if (nextViews != null) {
+      ev.views = nextViews;
+      const card = el.cards.querySelector(`a[href="#e-${CSS.escape(String(ev.id))}"]`)?.closest('.card');
+      const badge = card?.querySelector('.views-badge span');
+      if (badge) badge.textContent = String(nextViews);
+    }
+
     const social = window.ME_SOCIAL;
     window.ME_EVENT_UI.openDetail(toModel(ev), {
       favorites: social?.toggleFavorite && Number.isFinite(favId(ev.id)) ? {

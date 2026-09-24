@@ -266,7 +266,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     // Seulement les événements à venir : sinon les 200 premiers seraient bientôt tous passés
     const t = new Date();
     const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,price,user_id,status').eq('status', 'approved').or(`end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`).order('start_date', { ascending: true }).limit(200);
+    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,price,views_count,user_id,status').eq('status', 'approved').or(`end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`).order('start_date', { ascending: true }).limit(200);
     if (error) { console.warn('Impossible de charger les événements Supabase:', error.message); return; }
     const rows = data || [];
     const ids = [...new Set(rows.map(e => e.user_id).filter(Boolean))];
@@ -277,7 +277,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     }
     const mapped = rows.map(e => ({
       id: 1000000000 + Number(e.id), dbId: e.id, title: e.title, cat: e.category, sub: e.subtype,
-      city: e.city, region: e.region, date: e.start_date, endDate: e.end_date || '', price: e.price || '',
+      city: e.city, region: e.region, date: e.start_date, endDate: e.end_date || '', price: e.price || '', views: e.views_count || 0,
       organizer: profiles[e.user_id]?.display_name || profiles[e.user_id]?.username || 'Organisateur',
       verified: false, description: e.description, address: e.place, url: e.official_url || '', image_url: e.image_url || '', source: 'supabase'
     }));
@@ -715,6 +715,29 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     wire();
     if (!configured) { console.warn('Motor\'s Events : renseignez supabase-config.js pour activer les comptes.'); return; }
     supabase = createClient(cfg.url, cfg.publishableKey);
+
+    // Compteur de vues des événements : une ouverture de fiche = +1 vue.
+    // Le calcul +1 est fait côté PostgreSQL via RPC pour éviter les collisions
+    // lorsque plusieurs personnes ouvrent le même événement en même temps.
+    window.ME_EVENT_VIEWS = {
+      increment: async (eventId) => {
+        const id = Number(eventId);
+        if (!Number.isInteger(id) || id <= 0 || !supabase) return null;
+
+        const { data, error } = await supabase.rpc('increment_event_views', {
+          p_event_id: id
+        });
+
+        if (error) {
+          console.warn('[vues événement]', error.message);
+          return null;
+        }
+
+        const next = Number(Array.isArray(data) ? data[0] : data);
+        return Number.isFinite(next) ? next : null;
+      }
+    };
+
     supabase.auth.onAuthStateChange((_event, newSession) => {
       session = newSession;
       queueMicrotask(async () => {
