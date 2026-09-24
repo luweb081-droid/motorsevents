@@ -164,6 +164,7 @@
           ev.sub && h('span', { class: 'card-sub', text: ev.sub })),
         h('h3', {}, h('a', { href, text: ev.title, onclick: open })),
         where && h('p', { class: 'card-place' }, icon('pin'), h('span', { text: where })),
+        ev.price && h('p', { class: 'card-price' }, icon('ticket'), h('span', { text: String(ev.price).trim() })),
         h('div', { class: 'card-foot' },
           h('span', { class: 'price', text: isMulti(ev) ? range(F.short, ev) : '' }),
           h('div', { class: 'card-actions' },

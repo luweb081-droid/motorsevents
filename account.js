@@ -266,7 +266,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     // Seulement les événements à venir : sinon les 200 premiers seraient bientôt tous passés
     const t = new Date();
     const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,user_id,status').eq('status', 'approved').or(`end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`).order('start_date', { ascending: true }).limit(200);
+    const { data, error } = await supabase.from('events').select('id,title,category,subtype,start_date,end_date,place,city,region,description,official_url,image_url,price,user_id,status').eq('status', 'approved').or(`end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`).order('start_date', { ascending: true }).limit(200);
     if (error) { console.warn('Impossible de charger les événements Supabase:', error.message); return; }
     const rows = data || [];
     const ids = [...new Set(rows.map(e => e.user_id).filter(Boolean))];
@@ -277,7 +277,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     }
     const mapped = rows.map(e => ({
       id: 1000000000 + Number(e.id), dbId: e.id, title: e.title, cat: e.category, sub: e.subtype,
-      city: e.city, region: e.region, date: e.start_date, endDate: e.end_date || '', price: 'Voir organisateur',
+      city: e.city, region: e.region, date: e.start_date, endDate: e.end_date || '', price: e.price || '',
       organizer: profiles[e.user_id]?.display_name || profiles[e.user_id]?.username || 'Organisateur',
       verified: false, description: e.description, address: e.place, url: e.official_url || '', image_url: e.image_url || '', source: 'supabase'
     }));
@@ -520,7 +520,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     const dlg = $('#dlg'), form = $('#addForm');
     form.reset();
     $('#f-title').value = data.title || ''; $('#f-cat').value = data.category || 'auto'; $('#f-cat').dispatchEvent(new Event('change')); $('#f-sub').value = data.subtype || '';
-    $('#f-start').value = data.start_date || ''; $('#f-end').value = data.end_date || ''; $('#f-place').value = data.place || ''; $('#f-city').value = data.city || ''; $('#f-region').value = data.region || ''; $('#f-desc').value = data.description || ''; $('#f-url').value = data.official_url || '';
+    $('#f-start').value = data.start_date || ''; $('#f-end').value = data.end_date || ''; $('#f-place').value = data.place || ''; $('#f-city').value = data.city || ''; $('#f-region').value = data.region || ''; $('#f-desc').value = data.description || ''; $('#f-url').value = data.official_url || ''; $('#f-price').value = data.price || '';
     $('#dlg-titre').textContent = 'Modifier mon événement';
     const submit = form.querySelector('button[type="submit"]'); if (submit) submit.textContent = 'Enregistrer les modifications';
     $('#done').hidden = true; form.hidden = false; profileDialog.close(); dlg.showModal();
@@ -536,7 +536,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
     ev.preventDefault();
     if (!session) { notify('Connectez-vous pour publier un événement.'); accountDialog.showModal(); return; }
     const status = $('#eventSubmitStatus'); if (status) status.textContent = '';
-    const title = safeText($('#f-title').value, 120), place = safeText($('#f-place').value, 200), city = safeText($('#f-city').value, 120), region = safeText($('#f-region').value, 120), desc = safeText($('#f-desc').value, 5000), url = safeText($('#f-url').value, 300);
+    const title = safeText($('#f-title').value, 120), place = safeText($('#f-place').value, 200), city = safeText($('#f-city').value, 120), region = safeText($('#f-region').value, 120), desc = safeText($('#f-desc').value, 5000), url = safeText($('#f-url').value, 300), price = safeText($('#f-price')?.value || '', 100);
     const start = $('#f-start').value, end = $('#f-end').value || null, category = $('#f-cat').value, subtype = $('#f-sub').value;
     if (!title || !place || !city || !region || !desc || !start) { notify('Remplissez tous les champs obligatoires.'); return; }
     if (end && end < start) { notify('La date de fin doit être après la date de début.'); return; }
@@ -551,7 +551,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
       if (up.error) { notify(up.error.message); return; }
       image_url = supabase.storage.from('event-images').getPublicUrl(path).data.publicUrl;
     }
-    const payload = { title, category, subtype, start_date: start, end_date: end, starts_at: `${start}T00:00:00+02:00`, place, city, region, description: desc, official_url: url || null };
+    const payload = { title, category, subtype, start_date: start, end_date: end, starts_at: `${start}T00:00:00+02:00`, place, city, region, description: desc, official_url: url || null, price: price || null };
     if (image_url) payload.image_url = image_url;
     let result;
     if (editingEventId) {

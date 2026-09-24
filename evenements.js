@@ -22,6 +22,7 @@
       desc: 'description',
       url: 'official_url',
       image: 'image_url',
+      price: 'price',
       user: 'user_id',
     },
     // Seuls les événements validés par l'équipe sont affichés.
@@ -186,6 +187,7 @@
       desc: g('desc') || '',
       url: g('url') ? safeUrl(g('url')) : null,
       image: g('image') ? safeImg(g('image')) : null,
+      price: g('price') || '',
       userId: g('user') || null,
     };
   }
@@ -232,7 +234,7 @@
       title: ev.title, cat: ev.cat, sub: ev.sub,
       start: ev.start ? iso(ev.start) : '', end: ev.end ? iso(ev.end) : null,
       city: ev.city, region: ev.region, place: ev.place,
-      desc: ev.desc, image: ev.image, url: ev.url,
+      desc: ev.desc, image: ev.image, url: ev.url, price: ev.price,
       organizer: { id: ev.userId },
     };
   }
