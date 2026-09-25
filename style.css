@@ -1570,3 +1570,224 @@ body:has(dialog[open]) { overflow: hidden; }
     font-size: 12px;
   }
 }
+/* =========================================================
+   HERO — MOBILE FIX
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  /* Conteneur général */
+  .hero {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 2.2rem 0 3.5rem !important;
+
+    /* découpe légère en bas */
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 1.2rem),
+      0 100%
+    );
+
+    overflow: hidden;
+  }
+
+  /* Fond / bandes de vitesse */
+  .hero::before {
+    inset: 0 !important;
+    opacity: .45;
+    background:
+      linear-gradient(
+        115deg,
+        transparent 0 63%,
+        rgba(255,91,20,.8) 63% 66%,
+        transparent 66% 69%,
+        rgba(255,255,255,.7) 69% 70%,
+        transparent 70% 74%,
+        rgba(255,255,255,.05) 74% 100%
+      );
+  }
+
+  .hero::after {
+    background-size: 45px 45px;
+    opacity: .5;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 15%,
+      black 100%
+    );
+  }
+
+  /* Contenu */
+  .hero-content {
+    display: block !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .hero-copy {
+    width: 100% !important;
+    max-width: none !important;
+    position: relative;
+    z-index: 20;
+  }
+
+  /* Petit texte au-dessus */
+  .hero-kicker {
+    margin-bottom: 1rem;
+    font-size: .68rem;
+    letter-spacing: .11em;
+  }
+
+  .hero-kicker span {
+    width: 22px;
+  }
+
+  /* TITRE */
+  .hero h1 {
+    width: 100%;
+    max-width: 9ch !important;
+
+    font-size: clamp(2.9rem, 14vw, 4.1rem) !important;
+    line-height: .86 !important;
+
+    letter-spacing: -.025em;
+    margin-bottom: 1rem;
+  }
+
+  /* Description */
+  .hero .lede {
+    width: 100%;
+    max-width: 31ch !important;
+
+    font-size: .94rem !important;
+    line-height: 1.45;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* Barre de recherche */
+  .hero .searchbar {
+    width: 100%;
+    max-width: none !important;
+
+    display: grid;
+    grid-template-columns: 1fr !important;
+
+    padding: .35rem;
+    border-radius: 12px;
+
+    position: relative;
+    z-index: 30;
+
+    box-shadow:
+      0 15px 35px rgba(0,0,0,.28),
+      0 0 0 1px rgba(255,255,255,.08);
+  }
+
+  .hero .sb-field {
+    width: 100%;
+    min-width: 0;
+
+    padding: .55rem .7rem;
+
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hero .sb-field:last-of-type {
+    border-bottom: 0;
+  }
+
+  .hero .sb-field label {
+    font-size: .68rem;
+  }
+
+  .hero .sb-field input,
+  .hero .sb-field select {
+    width: 100%;
+    min-width: 0;
+    font-size: .92rem;
+  }
+
+  .hero .btn-search {
+    width: 100%;
+    min-height: 3rem;
+
+    margin-top: .25rem;
+    padding: .8rem 1rem;
+
+    font-size: .95rem;
+  }
+
+  /* =========================
+     VOITURE — ARRIÈRE-PLAN
+     ========================= */
+
+  .hero-car {
+    width: 430px !important;
+    max-width: none !important;
+
+    right: -190px !important;
+    bottom: 5px !important;
+
+    opacity: .18 !important;
+
+    z-index: 1 !important;
+
+    pointer-events: none;
+  }
+
+  .hero-car img {
+    width: 100%;
+    transform:
+      perspective(1000px)
+      rotateY(-7deg)
+      rotateZ(-1deg);
+  }
+
+  /* Halo */
+  .hero-car-glow {
+    opacity: .35;
+    bottom: 5%;
+    height: 90px;
+  }
+
+  /* Fumée */
+  .hero-car::before {
+    opacity: .35;
+  }
+
+  /* On cache les infos du bas sur téléphone */
+  .hero-bottom {
+    display: none !important;
+  }
+}
+
+
+/* Très petits téléphones */
+@media (max-width: 380px) {
+
+  .hero {
+    padding-top: 1.8rem !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .hero h1 {
+    font-size: 2.8rem !important;
+    max-width: 8ch !important;
+  }
+
+  .hero .lede {
+    font-size: .88rem !important;
+  }
+
+  .hero-car {
+    width: 360px !important;
+    right: -165px !important;
+    bottom: 0 !important;
+    opacity: .14 !important;
+  }
+
+}

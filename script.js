@@ -382,9 +382,126 @@
   fCat.addEventListener('change', fillSubs);
   fillSubs();
 
+  /* Régions du formulaire d'ajout (select #f-region).
+     NB : ne remplit que si le select est encore vide, au cas où account.js s'en chargerait déjà ailleurs. */
+  const fRegion = $('#f-region');
+  if (fRegion && fRegion.options.length === 0) REGIONS.forEach(r => fRegion.append(el('option', { value: r, text: r })));
+
+  /* ---------- Autocomplétion d'adresse (API Adresse - data.gouv.fr, gratuite, sans clé) ----------
+     Objectif : fiabiliser le champ « Lieu » et récupérer automatiquement ville, région et
+     coordonnées GPS exactes (utilisées par la carte au lieu de l'approximation ville/région). */
+  const addrInput = $('#f-place');
+  const addrList = $('#f-place-suggestions');
+  const addrHint = addrInput?.closest('.field-autocomplete')?.querySelector('.address-hint');
+  const cityInput = $('#f-city');
+  const latInput = $('#f-lat');
+  const lngInput = $('#f-lng');
+
+  let addrTimer = null;
+  let addrController = null;
+  let addrActiveIndex = -1;
+
+  const closeSuggestions = () => {
+    addrList.hidden = true;
+    addrList.replaceChildren();
+    addrActiveIndex = -1;
+  };
+
+  const setAddrCoords = (lat, lng) => {
+    if (latInput) latInput.value = lat ?? '';
+    if (lngInput) lngInput.value = lng ?? '';
+    if (addrHint) {
+      addrHint.textContent = (lat != null && lng != null)
+        ? 'Adresse validée.'
+        : 'Commencez à taper puis choisissez une adresse dans la liste pour la valider.';
+    }
+  };
+
+  async function fetchAddressSuggestions(q) {
+    addrController?.abort();
+    addrController = new AbortController();
+    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5&autocomplete=1`;
+    const res = await fetch(url, { signal: addrController.signal });
+    if (!res.ok) throw new Error(`API Adresse ${res.status}`);
+    return res.json();
+  }
+
+  function selectAddress(feature) {
+    const p = feature.properties || {};
+    const [lng, lat] = feature.geometry?.coordinates || [null, null];
+
+    addrInput.value = p.label || addrInput.value;
+    if (cityInput) cityInput.value = p.city || p.municipality || cityInput.value;
+    if (fRegion && p.context) {
+      // p.context ressemble à « 75, Paris, Île-de-France » : la région est le dernier morceau
+      const region = p.context.split(',').pop().trim();
+      const match = [...fRegion.options].find(o => o.value === region);
+      if (match) fRegion.value = region;
+    }
+    setAddrCoords(lat, lng);
+    closeSuggestions();
+  }
+
+  function renderAddressSuggestions(features) {
+    addrList.replaceChildren();
+    addrActiveIndex = -1;
+    if (!features.length) { closeSuggestions(); return; }
+    features.forEach(f => {
+      const li = el('li', { role: 'option', text: f.properties?.label || '' });
+      li.addEventListener('click', () => selectAddress(f));
+      addrList.append(li);
+    });
+    addrList.hidden = false;
+  }
+
+  if (addrInput && addrList) {
+    addrInput.addEventListener('input', () => {
+      clearTimeout(addrTimer);
+      // Le texte a changé depuis la dernière sélection : on invalide les coordonnées
+      // tant qu'une nouvelle adresse n'a pas été choisie dans la liste.
+      setAddrCoords(null, null);
+      const q = addrInput.value.trim();
+      if (q.length < 3) { closeSuggestions(); return; }
+      addrTimer = setTimeout(async () => {
+        try {
+          const data = await fetchAddressSuggestions(q);
+          renderAddressSuggestions(data.features || []);
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error('[adresse]', err);
+        }
+      }, 250);
+    });
+
+    addrInput.addEventListener('keydown', e => {
+      const items = [...addrList.querySelectorAll('li')];
+      if (!items.length || addrList.hidden) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        items.forEach(li => li.classList.remove('is-active'));
+        addrActiveIndex = e.key === 'ArrowDown'
+          ? (addrActiveIndex + 1) % items.length
+          : (addrActiveIndex - 1 + items.length) % items.length;
+        items[addrActiveIndex].classList.add('is-active');
+        items[addrActiveIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' && addrActiveIndex >= 0) {
+        e.preventDefault();
+        items[addrActiveIndex].click();
+      } else if (e.key === 'Escape') {
+        closeSuggestions();
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (!addrInput.contains(e.target) && !addrList.contains(e.target)) closeSuggestions();
+    });
+  }
+  /* ---------- Fin autocomplétion d'adresse ---------- */
+
   document.querySelectorAll('[data-open-add]').forEach(b => b.addEventListener('click', () => {
     form.reset();
     fillSubs();
+    setAddrCoords(null, null);
+    closeSuggestions();
     form.hidden = false;
     done.hidden = true;
     dlg.showModal();

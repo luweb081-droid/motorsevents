@@ -6,7 +6,7 @@
 <title>Motor's Events – Rassos, courses et salons auto, moto, quad, truck, nautisme, aviation</title>
 <meta name="description" content="Tous les événements auto, moto, quad, truck, nautisme et aviation en France. Publiez le vôtre gratuitement.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org data: blob:; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org data: blob:; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api-adresse.data.gouv.fr; upgrade-insecure-requests">
 <meta name="permissions-policy" content="geolocation=(self), camera=(), microphone=(), payment=()">
 <!--
   Polices : chargées depuis Google Fonts pour la maquette.
@@ -28,6 +28,12 @@
 .event-attendance-btn:disabled, .event-attendance-count:disabled { opacity:.55; cursor:default; }
 .event-attendance-count { font-weight:700; }
 .event-attendance-detail .event-attendance { margin:0; }
+
+.field-autocomplete { position: relative; }
+.address-suggestions { position:absolute; top:100%; left:0; right:0; z-index:20; background:#171717; border:1px solid rgba(255,255,255,.14); border-radius:8px; margin-top:4px; max-height:220px; overflow-y:auto; list-style:none; padding:4px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+.address-suggestions li { padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px; color:inherit; }
+.address-suggestions li:hover, .address-suggestions li.is-active { background:rgba(255,255,255,.08); }
+.address-hint { font-size:.8rem; opacity:.7; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -276,9 +282,13 @@
           <label for="f-end">Date de fin</label>
           <input id="f-end" name="end" type="date">
         </div>
-        <div class="full">
+        <div class="full field-autocomplete">
           <label for="f-place">Lieu</label>
-          <input id="f-place" name="place" type="text" placeholder="Adresse ou commune" maxlength="200" required>
+          <input id="f-place" name="place" type="text" placeholder="Adresse ou commune" maxlength="200" autocomplete="off" required>
+          <ul id="f-place-suggestions" class="address-suggestions" role="listbox" hidden></ul>
+          <p class="address-hint">Commencez à taper puis choisissez une adresse dans la liste pour la valider.</p>
+          <input type="hidden" id="f-lat" name="latitude">
+          <input type="hidden" id="f-lng" name="longitude">
         </div>
         <div>
           <label for="f-city">Ville</label>
